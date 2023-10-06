@@ -1,6 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:fast_it_2/screens/siswa/homepage.dart';
+import 'package:fast_it_2/screens/dinas/main_dinas.dart';
+import 'package:fast_it_2/screens/siswa/mainpage.dart';
+import 'package:fast_it_2/screens/staff/main_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,7 +28,11 @@ class _RegistrationState extends State<Registration> {
       TextEditingController(); // Added username controller
   String _selectedRole = 'Siswa'; // Default role selection
 
-  final List<String> _roles = ['Siswa', 'Staff']; // List of available roles
+  final List<String> _roles = [
+    'Siswa',
+    'Staff',
+    'Dinas'
+  ]; // List of available roles
 
   @override
   void dispose() {
@@ -60,9 +66,29 @@ class _RegistrationState extends State<Registration> {
             'username': username, // Added username field
             'role': role,
           });
-
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => HomePage()));
+          if (role == 'Siswa') {
+            // Redirect admin users to the AdminDashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => Dashboard()),
+            );
+          } else if (role == 'Staff') {
+            // Redirect regular users to the UserDashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => StaffHomePage()),
+            );
+          } else if (role == 'Dinas') {
+            // Redirect Dinas users to the DinasHomePage (replace with the actual page name)
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => DinasPage()),
+            );
+          } else {
+            // Handle unknown role or other cases
+            print("Unknown role: $role");
+            // You can add further handling or redirection here if needed
+          }
         } catch (e) {
           // Handle registration error, e.g., display an error message
           print("Registration error: $e");

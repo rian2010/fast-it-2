@@ -47,9 +47,7 @@ class _HomePageState extends State<HomePage> {
       await FirebaseAuth.instance.signOut();
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-            builder: (context) =>
-                WelcomePage()), 
+        MaterialPageRoute(builder: (context) => WelcomePage()),
         (route) =>
             false, // Prevent users from going back to the previous screen
       );
@@ -217,6 +215,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.assignment_turned_in,
                         title: 'Telah Diperbaiki',
                         width: (screenWidth - 32.0) / 2 - 10,
+                        onTap: () {},
                       ),
                       SizedBox(width: 8),
                       CustomBubbleSquare(

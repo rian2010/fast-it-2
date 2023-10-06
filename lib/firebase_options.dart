@@ -49,6 +49,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '367146511718',
     projectId: 'fast-it-id-feb06',
     authDomain: 'fast-it-id-feb06.firebaseapp.com',
+    databaseURL: 'https://fast-it-id-feb06-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'fast-it-id-feb06.appspot.com',
     measurementId: 'G-58GZWZGG7D',
   );
@@ -58,6 +59,7 @@ class DefaultFirebaseOptions {
     appId: '1:367146511718:android:d753eaf984e514979eaca7',
     messagingSenderId: '367146511718',
     projectId: 'fast-it-id-feb06',
+    databaseURL: 'https://fast-it-id-feb06-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'fast-it-id-feb06.appspot.com',
   );
 
@@ -66,6 +68,7 @@ class DefaultFirebaseOptions {
     appId: '1:367146511718:ios:44394b05e25f18939eaca7',
     messagingSenderId: '367146511718',
     projectId: 'fast-it-id-feb06',
+    databaseURL: 'https://fast-it-id-feb06-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'fast-it-id-feb06.appspot.com',
     iosBundleId: 'com.example.fastIt2',
   );
@@ -75,6 +78,7 @@ class DefaultFirebaseOptions {
     appId: '1:367146511718:ios:85d86ca0f05927139eaca7',
     messagingSenderId: '367146511718',
     projectId: 'fast-it-id-feb06',
+    databaseURL: 'https://fast-it-id-feb06-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'fast-it-id-feb06.appspot.com',
     iosBundleId: 'com.example.fastIt2.RunnerTests',
   );

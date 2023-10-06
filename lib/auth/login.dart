@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fast_it_2/screens/dinas/main_dinas.dart';
+import 'package:fast_it_2/screens/staff/main_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fast_it_2/screens/siswa/mainpage.dart';
@@ -31,11 +34,52 @@ class _LoginState extends State<Login> {
       );
 
       if (userCredential.user != null) {
-        // User successfully logged in, navigate to the next screen (Dashboard).
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const Dashboard()),
-        );
+        // Retrieve the user's role from Firestore or Firebase Authentication
+        // You should have a way to store and retrieve the user's role.
+        // For this example, let's assume you have a "role" field in Firestore.
+
+        // Replace 'yourFirestoreCollection' with the actual collection where user roles are stored.
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        if (userSnapshot.exists) {
+          String userRole = userSnapshot.get('role');
+
+          // Now, based on the user's role, you can navigate to the appropriate screen.
+          switch (userRole) {
+            case 'Siswa':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const Dashboard()), // Replace with your SiswaDashboard widget.
+              );
+              break;
+            case 'Staff':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const StaffHomePage()), // Replace with your StaffDashboard widget.
+              );
+            case 'Dinas':
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const DinasPage()), // Replace with your StaffDashboard widget.
+              );
+              break;
+            default:
+              // Handle unknown roles or other cases.
+              print("Unknown role: $userRole");
+          }
+        } else {
+          // Handle the case where the user's role data is not found.
+          print("User role not found");
+        }
       } else {
         // Handle the case where authentication failed.
         // You can display an error message to the user.
@@ -84,17 +128,19 @@ class _LoginState extends State<Login> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color:
-                          const Color(0xFF1CC2CD), // Set the outline color here
-                    ),
+                    // border: Border.all(
+                    //   color:
+                    //       const Color(0xFF1CC2CD), // Set the outline color here
+                    // ),
                   ),
                   child: TextFormField(
                     obscureText: _isObscure,
                     controller: _passwordController,
                     decoration: InputDecoration(
+                      labelText: 'Password',
                       hintText: "Password",
-                      border: InputBorder.none,
+                      border: const OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF1CC2CD))),
                       contentPadding: const EdgeInsets.all(10),
                       prefixIcon: const Icon(Icons.lock), // Password icon
                       suffixIcon: IconButton(
