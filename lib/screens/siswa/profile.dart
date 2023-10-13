@@ -1,13 +1,53 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
+  const Profile({super.key});
+
+  @override
+  State<Profile> createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  String username = '';
+  String email = ''; // Initialize username as an empty string
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch the username from Firestore when the widget is first created
+    fetchUserData();
+  }
+
+  Future<void> fetchUserData() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+
+        if (userDoc.exists) {
+          setState(() {
+            username = userDoc['username'];
+            email = userDoc['email'];
+          });
+        }
+      } catch (e) {
+        print('Error fetching user data: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Profile Page',
-          style: TextStyle(color: Colors.black),
+          'Profile',
+          style: const TextStyle(color: Colors.black),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -21,21 +61,26 @@ class Profile extends StatelessWidget {
               padding: EdgeInsets.all(16.0),
               child: CircleAvatar(
                 radius: 80.0,
-                // backgroundImage: AssetImage(
-                //     'assets/profile_image.jpg'), // You should replace this with the path to the user's profile image.
+                backgroundColor:
+                    Colors.grey, // Background color for the circle avatar
+                child: Icon(
+                  Icons.person, // Replace with the icon you want to use
+                  size: 100, // Adjust the size as needed
+                  color: Colors.white, // Icon color
+                ),
               ),
             ),
-            const Text(
-              'John Doe', // Replace with the user's name
-              style: TextStyle(
+            Text(
+              '$username', // Replace with the user's name
+              style: const TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8.0),
-            const Text(
-              'johndoe@example.com', // Replace with the user's email
-              style: TextStyle(
+            Text(
+              '$email', // Replace with the user's email
+              style: const TextStyle(
                 fontSize: 16.0,
                 color: Colors.grey,
               ),

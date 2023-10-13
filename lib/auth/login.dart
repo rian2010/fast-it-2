@@ -16,6 +16,10 @@ class _LoginState extends State<Login> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isObscure = true; // Initially, the password is obscured
+  bool _isButtonPressed = false; // Track button press
+  String _emailError = '';
+  String _passwordError = '';
+  String _authError = '';
 
   void _togglePasswordVisibility() {
     setState(() {
@@ -23,22 +27,48 @@ class _LoginState extends State<Login> {
     });
   }
 
-  void _signInWithEmailAndPassword() async {
-    try {
-      final String email = _emailController.text.trim();
-      final String password = _passwordController.text.trim();
+  Future<void> _signInWithEmailAndPassword() async {
+    if (_isButtonPressed) return;
 
+    setState(() {
+      _isButtonPressed = true;
+      _emailError = '';
+      _passwordError = '';
+      _authError = '';
+    });
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    bool hasError = false;
+
+    if (email.isEmpty) {
+      setState(() {
+        _emailError = 'Email cannot be empty';
+        hasError = true;
+      });
+    }
+
+    if (password.isEmpty) {
+      setState(() {
+        _passwordError = 'Password cannot be empty';
+        hasError = true;
+      });
+    }
+
+    if (hasError) {
+      setState(() {
+        _isButtonPressed = false;
+      });
+      return;
+    }
+
+    try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (userCredential.user != null) {
-        // Retrieve the user's role from Firestore or Firebase Authentication
-        // You should have a way to store and retrieve the user's role.
-        // For this example, let's assume you have a "role" field in Firestore.
-
-        // Replace 'yourFirestoreCollection' with the actual collection where user roles are stored.
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -47,46 +77,48 @@ class _LoginState extends State<Login> {
         if (userSnapshot.exists) {
           String userRole = userSnapshot.get('role');
 
-          // Now, based on the user's role, you can navigate to the appropriate screen.
           switch (userRole) {
             case 'Siswa':
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        const Dashboard()), // Replace with your SiswaDashboard widget.
+                  builder: (context) => const Dashboard(),
+                ),
               );
               break;
             case 'Staff':
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        const StaffHomePage()), // Replace with your StaffDashboard widget.
+                  builder: (context) => const StaffHomePage(),
+                ),
               );
+              break;
             case 'Dinas':
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        const DinasPage()), // Replace with your StaffDashboard widget.
+                  builder: (context) => const DinasPage(),
+                ),
               );
               break;
             default:
-              // Handle unknown roles or other cases.
               print("Unknown role: $userRole");
           }
         } else {
-          // Handle the case where the user's role data is not found.
           print("User role not found");
         }
       } else {
-        // Handle the case where authentication failed.
-        // You can display an error message to the user.
-        print("Authentication failed");
+        setState(() {
+          _authError = 'Authentication failed. Wrong email or password.';
+          _isButtonPressed = false; // Reset it to false in case of failure
+        });
       }
     } catch (e) {
-      // Handle any exceptions that occur during the sign-in process.
+      setState(() {
+        _authError = 'Authentication failed. Wrong email or password.';
+        _isButtonPressed = false; // Reset it to false in case of failure
+      });
       print("Error: $e");
     }
   }
@@ -94,6 +126,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
@@ -104,55 +137,74 @@ class _LoginState extends State<Login> {
               children: <Widget>[
                 Container(
                   width: 300,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color:
-                          const Color(0xFF1CC2CD), // Set the outline color here
-                    ),
-                  ),
-                  child: TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      hintText: "Email",
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(10),
-                      prefixIcon: Icon(Icons.person), // Email icon
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          hintText: "Email",
+                          labelText: 'Email',
+                          contentPadding: EdgeInsets.all(10),
+                          prefixIcon: Icon(Icons.person),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: const Color(0xFF1CC2CD),
+                            ),
+                          ),
+                          errorText:
+                              _emailError.isNotEmpty ? _emailError : null,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 10),
                 Container(
                   width: 300,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    // border: Border.all(
-                    //   color:
-                    //       const Color(0xFF1CC2CD), // Set the outline color here
-                    // ),
-                  ),
-                  child: TextFormField(
-                    obscureText: _isObscure,
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: "Password",
-                      border: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF1CC2CD))),
-                      contentPadding: const EdgeInsets.all(10),
-                      prefixIcon: const Icon(Icons.lock), // Password icon
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isObscure ? Icons.visibility : Icons.visibility_off,
-                          color: Colors.grey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        obscureText: _isObscure,
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          hintText: "Password",
+                          contentPadding: const EdgeInsets.all(10),
+                          prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isObscure
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isObscure = !_isObscure;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: const Color(0xFF1CC2CD),
+                            ),
+                          ),
+                          errorText:
+                              _passwordError.isNotEmpty ? _passwordError : null,
                         ),
-                        onPressed: _togglePasswordVisibility,
                       ),
-                    ),
+                    ],
                   ),
                 ),
+                if (_authError.isNotEmpty)
+                  Text(
+                    _authError,
+                    style: TextStyle(color: Colors.red),
+                  ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: 300,
@@ -166,9 +218,17 @@ class _LoginState extends State<Login> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(color: Colors.white),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: _isButtonPressed
+                          ? CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            )
+                          : const Text(
+                              "Login",
+                              style: TextStyle(color: Colors.white),
+                            ),
                     ),
                   ),
                 ),

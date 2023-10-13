@@ -1,12 +1,12 @@
 import 'package:fast_it_2/auth/login.dart';
 import 'package:fast_it_2/auth/register.dart';
+import 'package:fast_it_2/firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'dart:async';
 
 void main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Ensure Flutter binding is initialized
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -14,9 +14,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -31,86 +30,152 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key});
+class WelcomePage extends StatefulWidget {
+  const WelcomePage({Key? key});
+
+  @override
+  _WelcomePageState createState() => _WelcomePageState();
+}
+
+class _WelcomePageState extends State<WelcomePage> {
+  final List<String> backgroundImages = [
+    "lib/images/school.jpg",
+    "lib/images/classJ.jpg",
+    "lib/images/library.jpg",
+    "lib/images/library2.jpg",
+  ];
+
+  int _currentPage = 0;
+  int _nextImageIndex = 1;
+  Timer? _timer;
+  final Duration slideDuration = const Duration(seconds: 7);
+
+  @override
+  void initState() {
+    super.initState();
+    startAutoSlideTimer();
+  }
+
+  void startAutoSlideTimer() {
+    _timer = Timer.periodic(slideDuration, (timer) {
+      setState(() {
+        _currentPage = (_currentPage + 1) % backgroundImages.length;
+        _nextImageIndex = (_currentPage + 1) % backgroundImages.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.lightBlue,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Icon(
-              Icons.android,
-              color: Colors.white,
-              size: 45,
+      body: Stack(
+        children: [
+          ColorFiltered(
+            colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.5),
+                BlendMode
+                    .darken), // Adjust the opacity value for the darkness level
+            child: Image.asset(
+              backgroundImages[_currentPage],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
             ),
-            const SizedBox(height: 200),
-            const Text(
-              "Selamat Datang di Fast-it",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-              ),
+          ),
+          // Next image with the same color filter
+          ColorFiltered(
+            colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.5),
+                BlendMode
+                    .darken), // Adjust the opacity value for the darkness level
+            child: Image.asset(
+              backgroundImages[_nextImageIndex], // Preloaded next image
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
             ),
-            const SizedBox(height: 10),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20), // Add padding here
-              child: Text(
-                "Unlocking Excellence, One Facility at a Time",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                // const Icon(
+                //   Icons.android,
+                //   color: Colors.white,
+                //   size: 45,
+                // ),
+                const SizedBox(height: 200),
+                const Text(
+                  "Selamat Datang di Fast-it",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                  ),
                 ),
-                textAlign: TextAlign.center, // Center the text horizontally
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.lightBlue,
-                backgroundColor: Colors.white,
-                minimumSize: const Size(210, 48),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Login()),
-                );
-              },
-              child: const Text(
-                "Login",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                const SizedBox(height: 10),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    "Laporan Fasilitas yang Efisien, Perbaikan yang Transparan",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.lightBlue,
-                backgroundColor: Colors.white,
-                minimumSize: const Size(210, 48),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Registration()),
-                );
-              },
-              child: const Text(
-                "Register",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.lightBlue,
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(210, 48),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => Login()),
+                    );
+                  },
+                  child: const Text(
+                    "Login",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                 ),
-              ),
-            )
-          ],
-        ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.lightBlue,
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(210, 48),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => Registration()),
+                    );
+                  },
+                  child: const Text(
+                    "Register",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

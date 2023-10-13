@@ -128,7 +128,8 @@ class _LaporanState extends State<Laporan> {
                               'docx',
                               'jpg',
                               'jpeg',
-                              'png'
+                              'png',
+                              'mp4'
                             ],
                           );
 

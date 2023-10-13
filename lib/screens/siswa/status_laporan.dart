@@ -55,25 +55,7 @@ class _StatusLaporanState extends State<StatusLaporan> {
                           ),
                         ),
                       ),
-                      child: const Text('Button 1'),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: OutlinedButton(
-                      onPressed: () {
-                        // Add action for the second button
-                      },
-                      style: ButtonStyle(
-                        shape:
-                            MaterialStateProperty.all<RoundedRectangleBorder>(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            // Add border radius
-                          ),
-                        ),
-                      ),
-                      child: const Text('Button 2'),
+                      child: const Text('Menunggu Verifikasi'),
                     ),
                   ),
                   Padding(
@@ -91,7 +73,7 @@ class _StatusLaporanState extends State<StatusLaporan> {
                           ),
                         ),
                       ),
-                      child: const Text('Button 3'),
+                      child: const Text('Dalam Pengerjaan'),
                     ),
                   ),
                   Padding(
@@ -109,25 +91,7 @@ class _StatusLaporanState extends State<StatusLaporan> {
                           ),
                         ),
                       ),
-                      child: const Text('Button 3'),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: OutlinedButton(
-                      onPressed: () {
-                        // Add action for the third button
-                      },
-                      style: ButtonStyle(
-                        shape:
-                            MaterialStateProperty.all<RoundedRectangleBorder>(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            // Add border radius
-                          ),
-                        ),
-                      ),
-                      child: const Text('Button 3'),
+                      child: const Text('Selesai'),
                     ),
                   ),
                 ],

@@ -1,23 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_it_2/main.dart';
-import 'package:fast_it_2/screens/siswa/laporan.dart';
 import 'package:fast_it_2/widgets/build_square.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class HomePage extends StatefulWidget {
+class DinasHomePage extends StatefulWidget {
+  const DinasHomePage({Key? key}) : super(key: key);
+
   @override
-  _HomePageState createState() => _HomePageState();
+  State<DinasHomePage> createState() => _DinasHomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _DinasHomePageState extends State<DinasHomePage> {
   String username = '';
-  String role = ''; // Initialize username as an empty string
+  String role = '';
+  int laporanMasukNotificationCount = 0;
 
   @override
   void initState() {
     super.initState();
-    // Fetch the username from Firestore when the widget is first created
     fetchUserData();
   }
 
@@ -48,9 +49,9 @@ class _HomePageState extends State<HomePage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Log Out Confirmation',
+          title: const Text('Log Out Confirmation',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          content: Column(
+          content: const Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
@@ -63,9 +64,9 @@ class _HomePageState extends State<HomePage> {
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey, // Text color
-                textStyle: TextStyle(fontSize: 16),
+                textStyle: const TextStyle(fontSize: 16),
               ),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
               },
@@ -73,9 +74,9 @@ class _HomePageState extends State<HomePage> {
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red, // Text color
-                textStyle: TextStyle(fontSize: 16),
+                textStyle: const TextStyle(fontSize: 16),
               ),
-              child: Text('Log Out'),
+              child: const Text('Log Out'),
               onPressed: () {
                 logout(); // Call the logout method
                 Navigator.of(context).pop(); // Close the dialog
@@ -97,7 +98,7 @@ class _HomePageState extends State<HomePage> {
       await FirebaseAuth.instance.signOut();
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => WelcomePage()),
+        MaterialPageRoute(builder: (context) => const WelcomePage()),
         (route) => false,
       );
     } catch (e) {
@@ -120,7 +121,7 @@ class _HomePageState extends State<HomePage> {
         elevation: 0.0,
         actions: <Widget>[
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () {
               showLogoutConfirmationDialog(
                   context); // Show the confirmation dialog
@@ -141,10 +142,10 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 '$role',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ),
             const Padding(
@@ -235,8 +236,8 @@ class _HomePageState extends State<HomePage> {
                     children: <Widget>[
                       CustomBubbleSquare(
                         color: const Color(0xFF1CC2CD),
-                        icon: Icons.send,
-                        title: 'Laporan Terkirim',
+                        icon: Icons.inbox,
+                        title: 'Laporan Masuk',
                         width: (screenWidth - 32.0) / 2 - 10,
                         onTap: () {
                           // Handle button press for 'Laporan Terkirim'
@@ -246,7 +247,7 @@ class _HomePageState extends State<HomePage> {
                           // );
                         },
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       CustomBubbleSquare(
                         color: const Color(0xFF1CC2CD),
                         icon: Icons.timer,
@@ -258,7 +259,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
@@ -269,7 +270,7 @@ class _HomePageState extends State<HomePage> {
                         width: (screenWidth - 32.0) / 2 - 10,
                         onTap: () {},
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       CustomBubbleSquare(
                         color: const Color(0xFF1CC2CD),
                         icon: Icons.add,
@@ -277,10 +278,10 @@ class _HomePageState extends State<HomePage> {
                         width: (screenWidth - 32.0) / 2 - 10,
                         onTap: () {
                           // Handle button press for 'Buat Laporan'
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => Laporan()),
-                          );
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(builder: (context) => Laporan()),
+                          // );
                         },
                       ),
                     ],
