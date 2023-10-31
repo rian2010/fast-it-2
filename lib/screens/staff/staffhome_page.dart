@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/main.dart';
+import 'package:fast_it_2/screens/siswa/laporan.dart';
+import 'package:fast_it_2/screens/staff/laporan_masuk.dart';
+// import 'package:fast_it_2/screens/staff/laporan_masuk.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -36,135 +38,286 @@ class _StaffPageState extends State<StaffPage> {
           });
         }
       } catch (e) {
-        print('Error fetching user data: $e');
+        debugPrint('Error fetching user data: $e');
       }
-    }
-  }
-
-  Future<void> showLogoutConfirmationDialog(BuildContext context) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Log Out Confirmation',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                'Are you sure you want to log out?',
-                style: TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey, // Text color
-                textStyle: TextStyle(fontSize: 16),
-              ),
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red, // Text color
-                textStyle: TextStyle(fontSize: 16),
-              ),
-              child: Text('Log Out'),
-              onPressed: () {
-                logout(); // Call the logout method
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 10,
-          backgroundColor: Colors.white,
-        );
-      },
-    );
-  }
-
-  void logout() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => WelcomePage()),
-        (route) => false,
-      );
-    } catch (e) {
-      print('Error logging out: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Home',
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0.0,
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              showLogoutConfirmationDialog(
-                  context); // Show the confirmation dialog
-            },
-            color: Colors.black,
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Hi $username',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                '$role',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF1CC2CD),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF1CC2CD),
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: 10.0,
-                    horizontal: 16.0,
-                  ),
+            Container(
+              height: 300,
+              width: double.infinity,
+              padding: const EdgeInsets.only(left: 25, right: 25, top: 60),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF1CC2CD), Colors.blue],
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(50.0),
+                  bottomLeft: Radius.circular(50.0),
                 ),
               ),
+              child: Column(
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Selamat Datang',
+                            style: TextStyle(color: Colors.white, fontSize: 28),
+                          ),
+                        ],
+                      ),
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: Icon(
+                          Icons.notifications, // Replace with your desired icon
+                          color: Colors.white,
+                          size: 30, // Adjust the icon size as needed
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hi, ${username.toUpperCase()}👋',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16.5),
+                          ),
+                          const SizedBox(
+                            height: 8,
+                          ),
+                          Text(
+                            role,
+                            style: const TextStyle(
+                                color: Color.fromARGB(255, 224, 217, 217)),
+                          )
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          // Handle button press for 'Laporan Terkirim'
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const Laporan()),
+                          );
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.rectangle,
+                                    color: const Color(
+                                        0xFF1CCDB5), // Background color
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 20, // Adjust the icon size as needed
+                                ),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 4,
+                            ), // Add spacing between the icon and text
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LaporanMasuk(),
+                            ),
+                          );
+                        },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.rectangle,
+                                color:
+                                    const Color(0xFF1CCDB5), // Background color
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.inbox,
+                                  color: Colors.white,
+                                  size: 20, // Adjust the icon size as needed
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: const BoxDecoration(
+                                  color: Colors
+                                      .red, // Customize the badge background color
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    '4', // The badge text
+                                    style: TextStyle(
+                                      color: Colors
+                                          .white, // Customize the text color
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.rectangle,
+                                  color: const Color(
+                                      0xFF1CCDB5), // Background color
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.timer,
+                                color: Colors.white,
+                                size: 20, // Adjust the icon size as needed
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                              height:
+                                  4), // Add spacing between the icon and text
+                        ],
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.rectangle,
+                                  color: const Color(
+                                      0xFF1CCDB5), // Background color
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.assignment_turned_in,
+                                color: Colors.white,
+                                size: 20, // Adjust the icon size as needed
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                              height:
+                                  4), // Add spacing between the icon and text
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -35),
+              child: Container(
+                height: 60,
+                padding: const EdgeInsets.only(left: 20, top: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 25),
+                decoration: BoxDecoration(
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.grey,
+                        blurRadius: 20.0,
+                        offset: Offset(0, 10.0),
+                      ),
+                    ],
+                    borderRadius: BorderRadius.circular(5.0),
+                    color: Colors.white),
+                child: const TextField(
+                  decoration: InputDecoration(
+                      suffixIcon: Icon(
+                        Icons.search,
+                        color: Colors.black,
+                        size: 20.0,
+                      ),
+                      border: InputBorder.none,
+                      hintText: 'Search'),
+                ),
+              ),
+            ),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'Laporan', // Add your text here
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.start,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
