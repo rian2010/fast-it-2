@@ -55,7 +55,10 @@ class _StatusLaporanState extends State<StatusLaporan> {
                           ),
                         ),
                       ),
-                      child: const Text('Menunggu Verifikasi'),
+                      child: const Text(
+                        'Menunggu Verifikasi',
+                        style: TextStyle(color: Color(0xFF1CC2CD)),
+                      ),
                     ),
                   ),
                   Padding(
@@ -73,7 +76,10 @@ class _StatusLaporanState extends State<StatusLaporan> {
                           ),
                         ),
                       ),
-                      child: const Text('Dalam Pengerjaan'),
+                      child: const Text(
+                        'Dalam Pengerjaan',
+                        style: TextStyle(color: Color(0xFF1CC2CD)),
+                      ),
                     ),
                   ),
                   Padding(
@@ -91,7 +97,10 @@ class _StatusLaporanState extends State<StatusLaporan> {
                           ),
                         ),
                       ),
-                      child: const Text('Selesai'),
+                      child: const Text(
+                        'Selesai',
+                        style: TextStyle(color: Color(0xFF1CC2CD)),
+                      ),
                     ),
                   ),
                 ],
