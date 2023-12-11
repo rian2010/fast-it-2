@@ -22,8 +22,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fast-It',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const WelcomePage(),
     );
@@ -105,12 +106,7 @@ class _WelcomePageState extends State<WelcomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                // const Icon(
-                //   Icons.android,
-                //   color: Colors.white,
-                //   size: 45,
-                // ),
-                const SizedBox(height: 200),
+               const SizedBox(height: 200),
                 const Text(
                   "Selamat Datang di Fast-it",
                   style: TextStyle(
@@ -133,18 +129,22 @@ class _WelcomePageState extends State<WelcomePage> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.lightBlue,
+                    foregroundColor: const Color(0xFF0C356A),
                     backgroundColor: Colors.white,
                     minimumSize: const Size(210, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(30), // Set the border radius
+                    ),
                   ),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => Login()),
+                      MaterialPageRoute(builder: (context) => const Login()),
                     );
                   },
                   child: const Text(
-                    "Login",
+                    "Masuk",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -154,9 +154,12 @@ class _WelcomePageState extends State<WelcomePage> {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.lightBlue,
+                    foregroundColor: const Color(0xFF0C356A),
                     backgroundColor: Colors.white,
                     minimumSize: const Size(210, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(30),                     ),
                   ),
                   onPressed: () {
                     Navigator.push(
@@ -165,7 +168,7 @@ class _WelcomePageState extends State<WelcomePage> {
                     );
                   },
                   child: const Text(
-                    "Register",
+                    "Daftar",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,

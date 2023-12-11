@@ -1,7 +1,9 @@
+import 'package:fast_it_2/components/card/progress_laporan.dart';
+import 'package:fast_it_2/components/detail/dalam_pengerjaan.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/screens/siswa/laporan.dart';
+import 'package:fast_it_2/components/laporan/laporan.dart';
+import 'package:fast_it_2/components/laporan/laporan_selesai.dart';
 import 'package:fast_it_2/screens/staff/laporan_masuk.dart';
-// import 'package:fast_it_2/screens/staff/laporan_masuk.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +17,7 @@ class StaffPage extends StatefulWidget {
 class _StaffPageState extends State<StaffPage> {
   String username = '';
   String role = '';
+  int newReportsCount = 0;
 
   @override
   void initState() {
@@ -50,16 +53,13 @@ class _StaffPageState extends State<StaffPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Header Section
             Container(
               height: 300,
               width: double.infinity,
               padding: const EdgeInsets.only(left: 25, right: 25, top: 60),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1CC2CD), Colors.blue],
-                ),
+                color: Color(0xFF0C356A),
                 borderRadius: BorderRadius.only(
                   bottomRight: Radius.circular(50.0),
                   bottomLeft: Radius.circular(50.0),
@@ -82,16 +82,14 @@ class _StaffPageState extends State<StaffPage> {
                       Align(
                         alignment: Alignment.topRight,
                         child: Icon(
-                          Icons.notifications, // Replace with your desired icon
+                          Icons.notifications,
                           color: Colors.white,
-                          size: 30, // Adjust the icon size as needed
+                          size: 30,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -101,66 +99,33 @@ class _StaffPageState extends State<StaffPage> {
                           Text(
                             'Hi, ${username.toUpperCase()}👋',
                             style: const TextStyle(
-                                color: Colors.white, fontSize: 16.5),
+                              color: Colors.white,
+                              fontSize: 16.5,
+                            ),
                           ),
-                          const SizedBox(
-                            height: 8,
-                          ),
-                          Text(
-                            role,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 224, 217, 217)),
-                          )
+                          const SizedBox(height: 8),
                         ],
-                      ),
-                      const SizedBox(
-                        height: 8,
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
+                  // Buttons Section
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
+                      _buildMenuButton(
                         onTap: () {
-                          // Handle button press for 'Laporan Terkirim'
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const Laporan()),
+                              builder: (context) => const Laporan(),
+                            ),
                           );
                         },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.rectangle,
-                                    color: const Color(
-                                        0xFF1CCDB5), // Background color
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 20, // Adjust the icon size as needed
-                                ),
-                              ],
-                            ),
-                            const SizedBox(
-                              height: 4,
-                            ), // Add spacing between the icon and text
-                          ],
-                        ),
+                        icon: Icons.add,
+                        label: 'Buat \n Laporan',
                       ),
-                      GestureDetector(
+                      _buildMenuButton(
                         onTap: () {
                           Navigator.push(
                             context,
@@ -169,112 +134,40 @@ class _StaffPageState extends State<StaffPage> {
                             ),
                           );
                         },
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.rectangle,
-                                color:
-                                    const Color(0xFF1CCDB5), // Background color
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.inbox,
-                                  color: Colors.white,
-                                  size: 20, // Adjust the icon size as needed
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: Container(
-                                width: 20,
-                                height: 20,
-                                decoration: const BoxDecoration(
-                                  color: Colors
-                                      .red, // Customize the badge background color
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    '4', // The badge text
-                                    style: TextStyle(
-                                      color: Colors
-                                          .white, // Customize the text color
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        icon: Icons.inbox,
+                        label: 'Laporan\nMasuk',
+                        badgeCount: newReportsCount,
                       ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.rectangle,
-                                  color: const Color(
-                                      0xFF1CCDB5), // Background color
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              const Icon(
-                                Icons.timer,
-                                color: Colors.white,
-                                size: 20, // Adjust the icon size as needed
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                              height:
-                                  4), // Add spacing between the icon and text
-                        ],
+                      _buildMenuButton(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DalamPengerjaan(),
+                            ),
+                          );
+                        },
+                        icon: Icons.timer,
+                        label: 'Dalam\nPengerjaan',
                       ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.rectangle,
-                                  color: const Color(
-                                      0xFF1CCDB5), // Background color
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              const Icon(
-                                Icons.assignment_turned_in,
-                                color: Colors.white,
-                                size: 20, // Adjust the icon size as needed
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                              height:
-                                  4), // Add spacing between the icon and text
-                        ],
+                      _buildMenuButton(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LaporanSelesai(),
+                            ),
+                          );
+                        },
+                        icon: Icons.assignment_turned_in,
+                        label: 'Laporan \n Selesai',
                       ),
                     ],
                   ),
                 ],
               ),
             ),
+            // Search Section
             Transform.translate(
               offset: const Offset(0, -35),
               child: Container(
@@ -282,42 +175,160 @@ class _StaffPageState extends State<StaffPage> {
                 padding: const EdgeInsets.only(left: 20, top: 8),
                 margin: const EdgeInsets.symmetric(horizontal: 25),
                 decoration: BoxDecoration(
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.grey,
-                        blurRadius: 20.0,
-                        offset: Offset(0, 10.0),
-                      ),
-                    ],
-                    borderRadius: BorderRadius.circular(5.0),
-                    color: Colors.white),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.grey,
+                      blurRadius: 20.0,
+                      offset: Offset(0, 10.0),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(5.0),
+                  color: Colors.white,
+                ),
                 child: const TextField(
                   decoration: InputDecoration(
-                      suffixIcon: Icon(
-                        Icons.search,
-                        color: Colors.black,
-                        size: 20.0,
-                      ),
-                      border: InputBorder.none,
-                      hintText: 'Search'),
+                    suffixIcon: Icon(
+                      Icons.search,
+                      color: Colors.black,
+                      size: 20.0,
+                    ),
+                    border: InputBorder.none,
+                    hintText: 'Search',
+                  ),
                 ),
               ),
             ),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    'Laporan', // Add your text here
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            // Laporan Masuk Section
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20),
+              child: Row(
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Laporan Masuk',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.start,
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LaporanMasuk(),
+                          ),
+                        );
+                        // markLaporanMasukPageOpened();
+                        setState(() {
+                          newReportsCount = 0;
+                        });
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Lebih Banyak',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF0C356A),
+                                ),
+                                textAlign: TextAlign.end,
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Color(0xFF0C356A),
+                          ),
+                        ],
+                      ),
                     ),
-                    textAlign: TextAlign.start,
+                  ),
+                ],
+              ),
+            ),
+            ProgresLaporan(
+              userRole: 'staff',
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build individual menu buttons
+  Widget _buildMenuButton({
+    required VoidCallback onTap,
+    required IconData icon,
+    required String label,
+    int? badgeCount,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Align(
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.rectangle,
+                    color: const Color(0xFF7895CB),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                if (badgeCount != null && badgeCount > 0)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

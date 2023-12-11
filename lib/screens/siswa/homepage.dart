@@ -1,11 +1,15 @@
-import 'package:fast_it_2/main.dart';
-import 'package:fast_it_2/screens/siswa/laporan.dart';
-import 'package:fast_it_2/widgets/build_square.dart';
+import 'package:fast_it_2/components/card/card_status.dart';
+import 'package:fast_it_2/components/detail/dalam_pengerjaan.dart';
+import 'package:fast_it_2/components/laporan/laporan_selesai.dart';
+import 'package:fast_it_2/components/laporan/laporan.dart';
+import 'package:fast_it_2/components/widget/notification.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -13,6 +17,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String username = '';
   String role = ''; // Initialize username as an empty string
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -35,262 +40,334 @@ class _HomePageState extends State<HomePage> {
             username = userDoc['username'];
             role = userDoc['role'];
           });
+        } else {
+          debugPrint('User document does not exist in Firestore.');
         }
       } catch (e) {
-        print('Error fetching user data: $e');
+        debugPrint('Error fetching user data: $e');
       }
-    }
-  }
-
-  Future<void> showLogoutConfirmationDialog(BuildContext context) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Log Out Confirmation',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                'Are you sure you want to log out?',
-                style: TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey, // Text color
-                textStyle: TextStyle(fontSize: 16),
-              ),
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red, // Text color
-                textStyle: TextStyle(fontSize: 16),
-              ),
-              child: Text('Log Out'),
-              onPressed: () {
-                logout(); // Call the logout method
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 10,
-          backgroundColor: Colors.white,
-        );
-      },
-    );
-  }
-
-  void logout() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => WelcomePage()),
-        (route) => false,
-      );
-    } catch (e) {
-      print('Error logging out: $e');
+    } else {
+      debugPrint('User is not signed in.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Home',
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0.0,
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              showLogoutConfirmationDialog(
-                  context); // Show the confirmation dialog
-            },
-            color: Colors.black,
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Hi $username',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                '$role',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF1CC2CD),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF1CC2CD),
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: 10.0,
-                    horizontal: 16.0,
-                  ),
+            Container(
+              height: 300,
+              width: double.infinity,
+              padding: const EdgeInsets.only(left: 25, right: 25, top: 60),
+              decoration: const BoxDecoration(
+                color: Color(0xFF0C356A),
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(50.0),
+                  bottomLeft: Radius.circular(50.0),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                width: screenWidth - 32.0,
-                height: 120,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF1CC2CD),
-                    width: 2.0,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: EdgeInsets.only(left: 16.0, top: 8.0),
-                            child: Text(
-                              'Welcome',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(left: 16.0),
-                            child: Text(
-                              'Facilities Report',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
+                          Text(
+                            'Selamat Datang',
+                            style: TextStyle(color: Colors.white, fontSize: 28),
                           ),
                         ],
                       ),
-                    ),
-                    Container(
-                      width: 120,
-                      height: 120 - 15.0,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage('lib/images/pana.png'),
-                          fit: BoxFit.cover,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NotificationPage(),
+                            ),
+                          );
+                        },
+                        child: const Align(
+                          alignment: Alignment.topRight,
+                          child: Icon(
+                            Icons
+                                .notifications, // Replace with your desired icon
+                            color: Colors.white,
+                            size: 30, // Adjust the icon size as needed
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
+                      )
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.send,
-                        title: 'Laporan Terkirim',
-                        width: (screenWidth - 32.0) / 2 - 10,
-                        onTap: () {
-                          // Handle button press for 'Laporan Terkirim'
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(builder: (context) => Laporan()),
-                          // );
-                        },
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hi, ${username.toUpperCase()}👋',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16.5),
+                          ),
+                          const SizedBox(
+                            height: 8,
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 8),
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.timer,
-                        title: 'Dalam Penanganan',
-                        width: (screenWidth - 32.0) / 2 - 10,
-                        onTap: () {
-                          // Handle button press for 'Dalam Penanganan'
-                        },
+                      const SizedBox(
+                        height: 8,
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.assignment_turned_in,
-                        title: 'Telah Diperbaiki',
-                        width: (screenWidth - 32.0) / 2 - 10,
-                        onTap: () {},
-                      ),
-                      SizedBox(width: 8),
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.add,
-                        title: 'Buat Laporan',
-                        width: (screenWidth - 32.0) / 2 - 10,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
                         onTap: () {
-                          // Handle button press for 'Buat Laporan'
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const Laporan()));
+                        },
+                        child: Column(
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 75,
+                                  height: 75,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.rectangle,
+                                    color: const Color(
+                                        0xFF7895CB), // Background color
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size:
+                                          30, // Adjust the icon size as needed
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Buat Laporan',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors
+                                    .white, // Change the text color as needed
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => Laporan()),
+                            MaterialPageRoute(
+                              builder: (context) => const DalamPengerjaan(),
+                            ),
                           );
                         },
+                        child: Column(
+                          children: [
+                            Column(
+                              children: [
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 75,
+                                      height: 75,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.rectangle,
+                                        color: const Color(
+                                            0xFF7895CB), // Background color
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.timer,
+                                      color: Colors.white,
+                                      size:
+                                          30, // Adjust the icon size as needed
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Dalam Pengerjaan',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors
+                                        .white, // Change the text color as needed
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(
+                                    height:
+                                        4), // Add spacing between the icon and text
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LaporanSelesai(),
+                            ),
+                          );
+                        },
+                        child: Column(
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 75,
+                                  height: 75,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.rectangle,
+                                    color: const Color(
+                                        0xFF7895CB), // Background color
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.verified,
+                                  color: Colors.white,
+                                  size: 30, // Adjust the icon size as needed
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Laporan Selesai',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors
+                                    .white, // Change the text color as needed
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(
+                                height:
+                                    4), // Add spacing between the icon and text
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
+            Transform.translate(
+              offset: const Offset(0, -35),
+              child: Container(
+                height: 60,
+                padding: const EdgeInsets.only(left: 20, top: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 25),
+                decoration: BoxDecoration(
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.grey,
+                        blurRadius: 20.0,
+                        offset: Offset(0, 10.0),
+                      ),
+                    ],
+                    borderRadius: BorderRadius.circular(5.0),
+                    color: Colors.white),
+                child: TextField(
+                  focusNode: _searchFocusNode,
+                  decoration: const InputDecoration(
+                    suffixIcon: Icon(
+                      Icons.search,
+                      color: Colors.black,
+                      size: 20.0,
+                    ),
+                    border: InputBorder.none,
+                    hintText: 'Search',
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20),
+              child: Row(
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Laporan Kamu', // Add your text here
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.start,
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Lebih Banyak', // Add your text here
+                                style: TextStyle(
+                                    fontSize: 13, color: Color(0xFF0C356A)),
+                                textAlign: TextAlign.end,
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Color(0xFF0C356A),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CardStatus()
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Dispose of the focus node when the widget is disposed
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 }

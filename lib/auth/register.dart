@@ -1,38 +1,35 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:fast_it_2/screens/dinas/main_dinas.dart';
+import 'package:fast_it_2/auth/services/services.dart';
 import 'package:fast_it_2/screens/siswa/mainpage.dart';
-import 'package:fast_it_2/screens/staff/main_page.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class Registration extends StatefulWidget {
+  const Registration({Key? key}) : super(key: key);
+
   @override
   _RegistrationState createState() => _RegistrationState();
 }
 
 class _RegistrationState extends State<Registration> {
-  bool _isObscure = true;
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _usernameController =
-      TextEditingController(); // Added username controller
-  String _selectedRole = 'Siswa'; // Default role selection
-
-  final List<String> _roles = [
-    'Siswa',
-    'Staff',
-    'Dinas'
-  ]; // List of available roles
+  final String _defaultRole = 'Siswa';
+  bool _isObscure = true;
+  bool _isPasswordEightCharacters = false;
+  bool _hasPasswordOneNumber = false;
+  bool _isRegistering = false;
+  OverlayEntry? _overlayEntry;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _emailController.dispose();
-    _usernameController.dispose(); // Dispose of the username controller
     super.dispose();
   }
 
@@ -42,235 +39,282 @@ class _RegistrationState extends State<Registration> {
     });
   }
 
+  void _onPasswordChanged(String password) {
+    final numericRegex = RegExp(r'[0-9]');
+
+    setState(() {
+      _isPasswordEightCharacters = password.length >= 8;
+      _hasPasswordOneNumber = numericRegex.hasMatch(password);
+    });
+  }
+
+  void _showLoadingOverlay() {
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: Container(
+          color: Colors.black.withOpacity(0.5),
+          child: const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeLoadingOverlay() {
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove();
+      _overlayEntry = null;
+    }
+  }
+
+  String? _validateNotEmpty(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Form ini wajib diisi';
+    }
+    return null;
+  }
+
+  String? _validatePasswordConfirmation(String? value) {
+    if (value != _passwordController.text) {
+      return 'Kata sandi tidak sama';
+    }
+    return null;
+  }
+
+  Future<bool> _isEmailInUse(String email) async {
+    try {
+      final result =
+          await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+      return result.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
   void _signUp(String email, String password, String confirmPassword,
-      String username, String role) async {
+      String username) async {
     if (_formKey.currentState!.validate()) {
+      // Check password requirements
+      if (!_isPasswordEightCharacters || !_hasPasswordOneNumber) {
+        setState(() {
+          _isRegistering = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Kata sandi harus memiliki minimal 8 karakter dan setidaknya 1 angka.'),
+          ),
+        );
+        return;
+      }
+
+      _showLoadingOverlay();
+      setState(() {
+        _isRegistering = true;
+      });
+
       if (password == confirmPassword) {
         try {
-          UserCredential userCredential = await FirebaseAuth.instance
-              .createUserWithEmailAndPassword(email: email, password: password);
+          User? user = await _firebaseService.signUp(email, password, username);
 
-          // Store additional user details in Firestore
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userCredential.user!.uid)
-              .set({
-            'email': email,
-            'username': username, // Added username field
-            'role': role,
-          });
-          if (role == 'Siswa') {
-            // Redirect admin users to the AdminDashboard
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => Dashboard()),
-            );
-          } else if (role == 'Staff') {
-            // Redirect regular users to the UserDashboard
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => StaffHomePage()),
-            );
-          } else if (role == 'Dinas') {
-            // Redirect Dinas users to the DinasHomePage (replace with the actual page name)
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => DinasPage()),
-            );
-          } else {
-            // Handle unknown role or other cases
-            print("Unknown role: $role");
-            // You can add further handling or redirection here if needed
+          if (user != null) {
+            if (_defaultRole == 'Siswa') {
+              _completeSignup();
+            } else {
+              debugPrint("Unknown role: $_defaultRole");
+            }
           }
         } catch (e) {
-          // Handle registration error, e.g., display an error message
-          print("Registration error: $e");
+          debugPrint("Registration error: $e");
+        } finally {
+          _removeLoadingOverlay();
+          setState(() {
+            _isRegistering = false;
+          });
         }
       } else {
-        // Handle password mismatch error, e.g., display an error message
-        print("Passwords do not match");
+        debugPrint("Kata sandi tidak sama");
+        setState(() {
+          _isRegistering = false;
+        });
       }
     }
   }
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  void _completeSignup() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const Dashboard(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Registration Page'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          color: Colors.black,
+        ),
+        title: const Text(
+          'Daftar Akun',
+          style: TextStyle(
+            color: Color.fromARGB(255, 76, 74, 74),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0.0,
       ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Form(
-              key: _formKey, // Added form key
+              key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  Container(
-                    width: 300,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF1CC2CD),
-                      ),
-                    ),
-                    child: TextFormField(
-                      controller:
-                          _usernameController, // Added username controller
-                      decoration: const InputDecoration(
-                        hintText: "Username",
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(10),
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 300,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF1CC2CD),
-                      ),
-                    ),
-                    child: TextFormField(
-                      controller: _emailController, // Added email controller
-                      decoration: const InputDecoration(
-                        hintText: "Email", // Added email field
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(10),
-                        prefixIcon: Icon(Icons.email), // Email icon
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 300,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF1CC2CD),
-                      ),
-                    ),
-                    child: TextFormField(
-                      obscureText: _isObscure,
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        hintText: "Password",
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(10),
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isObscure
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.grey,
-                          ),
-                          onPressed: _togglePasswordVisibility,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 300,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF1CC2CD),
-                      ),
-                    ),
-                    child: TextFormField(
-                      obscureText: _isObscure,
-                      controller: _confirmPasswordController,
-                      decoration: InputDecoration(
-                        hintText: "Confirm Password",
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(10),
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isObscure
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.grey,
-                          ),
-                          onPressed: _togglePasswordVisibility,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 300,
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF1CC2CD),
-                      ),
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedRole,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedRole = value ?? 'User';
-                        });
-                      },
-                      items: _roles.map((role) {
-                        return DropdownMenuItem<String>(
-                          value: role,
-                          child: Text(role),
-                        );
-                      }).toList(),
-                      decoration: InputDecoration(
-                        hintText: "Select Role",
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   SizedBox(
                     width: 300,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        String email = _emailController.text.trim();
-                        String password = _passwordController.text.trim();
-                        String confirmPassword =
-                            _confirmPasswordController.text.trim();
-                        String username = _usernameController.text.trim();
-                        String role = _selectedRole;
-
-                        _signUp(
-                            email, password, confirmPassword, username, role);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: const Color(0xFF1CC2CD),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: _usernameController,
+                          decoration: InputDecoration(
+                            hintText: "Nama Lengkap",
+                            labelText: 'Nama Lengkap',
+                            contentPadding: const EdgeInsets.all(10),
+                            prefixIcon: const Icon(Icons.person),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1CC2CD),
+                              ),
+                            ),
+                          ),
+                          validator: _validateNotEmpty,
                         ),
-                      ),
-                      child: const Text(
-                        "Register",
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: 300,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: InputDecoration(
+                            hintText: 'Email',
+                            labelText: 'Email',
+                            contentPadding: const EdgeInsets.all(10),
+                            prefixIcon: const Icon(Icons.mail),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1CC2CD),
+                              ),
+                            ),
+                          ),
+                          validator: _validateNotEmpty,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: 300,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          onChanged: _onPasswordChanged,
+                          obscureText: _isObscure,
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            hintText: 'Kata Sandi',
+                            labelText: 'Kata Sandi',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1CC2CD),
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.all(10),
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isObscure
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey,
+                              ),
+                              onPressed: _togglePasswordVisibility,
+                            ),
+                          ),
+                          validator: _validateNotEmpty,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: 300,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          obscureText: _isObscure,
+                          controller: _confirmPasswordController,
+                          decoration: InputDecoration(
+                            hintText: "Konfirmasi Kata Sandi",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1CC2CD),
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.all(10),
+                            prefixIcon: const Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isObscure
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey,
+                              ),
+                              onPressed: _togglePasswordVisibility,
+                            ),
+                          ),
+                          validator: _validatePasswordConfirmation,
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildPasswordStrengthIndicator(
+                    text: "Minimal Memiliki 8 karakter",
+                    indicator: _isPasswordEightCharacters,
+                  ),
+                  _buildPasswordStrengthIndicator(
+                    text: "Minimal Memiliki 1 Angka",
+                    indicator: _hasPasswordOneNumber,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildRegistrationButton(),
                   const SizedBox(height: 10),
                 ],
               ),
@@ -280,17 +324,84 @@ class _RegistrationState extends State<Registration> {
       ),
     );
   }
-}
 
-class HomeScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Home Screen'),
+  Widget _buildPasswordStrengthIndicator({
+    required String text,
+    required bool indicator,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: indicator ? Colors.green : Colors.transparent,
+              border: indicator
+                  ? Border.all(color: Colors.transparent)
+                  : Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: indicator
+                ? const Center(
+                    child: Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 15,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(
+            width: 10,
+          ),
+          Text(text),
+        ],
       ),
-      body: Center(
-        child: Text('Welcome to the Home Screen!'),
+    );
+  }
+
+  Widget _buildRegistrationButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Container(
+        child: MaterialButton(
+          minWidth: double.infinity,
+          height: 60,
+          onPressed: _isRegistering
+              ? null
+              : () async {
+                  String email = _emailController.text.trim();
+                  String password = _passwordController.text.trim();
+                  String confirmPassword =
+                      _confirmPasswordController.text.trim();
+                  String username = _usernameController.text.trim();
+
+                  _signUp(email, password, confirmPassword, username);
+                },
+          color: const Color(0xFF0C356A),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _isRegistering
+                ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                : const Text(
+                    "Daftar",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+          ),
+        ),
       ),
     );
   }

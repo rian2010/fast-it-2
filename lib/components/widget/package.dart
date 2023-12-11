@@ -26,7 +26,7 @@ class PackageDeliveryTrackingPage extends StatelessWidget {
               const Divider(height: 1.0),
               Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: _OnTimeBar(),
+                child: _OnTimeBar(driver: data.driverInfo),
               ),
             ],
           ),
@@ -49,7 +49,7 @@ class _OrderTitle extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'Proses Pekerjaan #${orderInfo.id}',
+          'Proses Pengerjaan ${orderInfo.id}',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
@@ -194,7 +194,9 @@ class _DeliveryProcesses extends StatelessWidget {
 }
 
 class _OnTimeBar extends StatelessWidget {
-  const _OnTimeBar({Key? key}) : super(key: key);
+  const _OnTimeBar({Key? key, required this.driver}) : super(key: key);
+
+  final _DriverInfo driver;
 
   @override
   Widget build(BuildContext context) {
@@ -212,9 +214,27 @@ class _OnTimeBar extends StatelessWidget {
           shape: const StadiumBorder(),
           color: const Color(0xff66c97f),
           textColor: Colors.white,
-          child: const Text('On-time'),
+          child: const Text('Selesai'),
         ),
         const Spacer(),
+        Text(
+          'Driver\n${driver.name}',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(width: 12.0),
+        Container(
+          width: 40.0,
+          height: 40.0,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              fit: BoxFit.fitWidth,
+              image: NetworkImage(
+                driver.thumbnailUrl,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -223,21 +243,29 @@ class _OnTimeBar extends StatelessWidget {
 _OrderInfo _data(int id) => _OrderInfo(
       id: id,
       date: DateTime.now(),
+      driverInfo: const _DriverInfo(
+        name: 'Gamal',
+        thumbnailUrl:
+            'https://i.pinimg.com/originals/08/45/81/084581e3155d339376bf1d0e17979dc6.jpg',
+      ),
       deliveryProcesses: [
         const _DeliveryProcess(
-          'Process',
+          'Terverifikasi',
           messages: [
-            _DeliveryMessage('', ''),
-            _DeliveryMessage('', ''),
+            _DeliveryMessage('8:30am', 'Laporan Diverifikasi'),
+            _DeliveryMessage('11:30am', 'Teknisi Gamal ditugaskan'),
           ],
         ),
         const _DeliveryProcess(
-          'Process',
+          'Dalam Pengerjaan',
           messages: [
-            _DeliveryMessage('', ''),
-            _DeliveryMessage('', ''),
+            _DeliveryMessage('12:00pm', 'Teknisi tiba dilokasi'),
+            _DeliveryMessage('12:01pm', 'Dalam Pengerjaan'),
           ],
         ),
+        const _DeliveryProcess('Selesai', messages: [
+          _DeliveryMessage('14:00', 'Fasilitas telah selesai diperbaiki')
+        ]),
         const _DeliveryProcess.complete(),
       ],
     );
@@ -246,12 +274,24 @@ class _OrderInfo {
   const _OrderInfo({
     required this.id,
     required this.date,
+    required this.driverInfo,
     required this.deliveryProcesses,
   });
 
   final int id;
   final DateTime date;
+  final _DriverInfo driverInfo;
   final List<_DeliveryProcess> deliveryProcesses;
+}
+
+class _DriverInfo {
+  const _DriverInfo({
+    required this.name,
+    required this.thumbnailUrl,
+  });
+
+  final String name;
+  final String thumbnailUrl;
 }
 
 class _DeliveryProcess {

@@ -73,8 +73,8 @@ class _StepperPageState extends State<StepperPage> {
             steps: [
               Step(
                 title: const Text('Step 1'),
-                content: Column(
-                  children: const [
+                content: const Column(
+                  children: [
                     Text('This is the first step.'),
                   ],
                 ),

@@ -1,8 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/main.dart';
-import 'package:fast_it_2/widgets/build_square.dart';
+import 'package:fast_it_2/components/card/card_laporan_masuk.dart';
+import 'package:fast_it_2/components/card/progress_laporan.dart';
+import 'package:fast_it_2/components/laporan/dalam_pengerjaan.dart';
+import 'package:fast_it_2/components/laporan/laporan_masuk.dart';
+import 'package:fast_it_2/components/laporan/laporan_selesai.dart';
+import 'package:fast_it_2/screens/dinas/user_list.dart';
+// import 'package:fast_it_2/screens/staff/laporan_masuk.dart';
+import 'package:fast_it_2/components/widget/notification.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DinasHomePage extends StatefulWidget {
   const DinasHomePage({Key? key}) : super(key: key);
@@ -14,16 +21,17 @@ class DinasHomePage extends StatefulWidget {
 class _DinasHomePageState extends State<DinasHomePage> {
   String username = '';
   String role = '';
-  int laporanMasukNotificationCount = 0;
+  int newReportsCount = 0;
 
   @override
   void initState() {
     super.initState();
     fetchUserData();
+    checkIfLaporanMasukPageOpened();
   }
 
   Future<void> fetchUserData() async {
-    User? currentUser = FirebaseAuth.instance.currentUser;
+    var currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       try {
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
@@ -34,7 +42,6 @@ class _DinasHomePageState extends State<DinasHomePage> {
         if (userDoc.exists) {
           setState(() {
             username = userDoc['username'];
-            role = userDoc['role'];
           });
         }
       } catch (e) {
@@ -43,251 +50,329 @@ class _DinasHomePageState extends State<DinasHomePage> {
     }
   }
 
-  Future<void> showLogoutConfirmationDialog(BuildContext context) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Log Out Confirmation',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                'Are you sure you want to log out?',
-                style: TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey, // Text color
-                textStyle: const TextStyle(fontSize: 16),
-              ),
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red, // Text color
-                textStyle: const TextStyle(fontSize: 16),
-              ),
-              child: const Text('Log Out'),
-              onPressed: () {
-                logout(); // Call the logout method
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 10,
-          backgroundColor: Colors.white,
-        );
-      },
-    );
-  }
+  Future<void> checkIfLaporanMasukPageOpened() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool laporanMasukPageOpened =
+        prefs.getBool('laporanMasukPageOpened') ?? false;
 
-  void logout() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomePage()),
-        (route) => false,
-      );
-    } catch (e) {
-      print('Error logging out: $e');
+    if (!laporanMasukPageOpened) {
+      listenForNewReports();
     }
   }
 
+  void markLaporanMasukPageOpened() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('laporanMasukPageOpened', true);
+  }
+
+  void listenForNewReports() {
+    FirebaseFirestore.instance
+        .collection('reports')
+        .snapshots()
+        .listen((event) {
+      setState(() {
+        allReports = event.docs; // Store all reports
+        newReportsCount = allReports.length; // Update new reports count
+        filterReports(searchController.text); // Apply filtering
+      });
+    });
+  }
+
+  void filterReports(String query) {
+    setState(() {
+      filteredReports = allReports.where((report) {
+        // Assuming 'ruangan' is the field in your report documents
+        return report['ruangan'].toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
+  }
+
+  TextEditingController searchController = TextEditingController();
+  List<QueryDocumentSnapshot> allReports = [];
+  List<QueryDocumentSnapshot> filteredReports = [];
+
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Home',
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0.0,
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              showLogoutConfirmationDialog(
-                  context); // Show the confirmation dialog
-            },
-            color: Colors.black,
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Hi $username',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                '$role',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF1CC2CD),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF1CC2CD),
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: 10.0,
-                    horizontal: 16.0,
-                  ),
+            Container(
+              height: 300,
+              width: double.infinity,
+              padding: const EdgeInsets.only(left: 25, right: 25, top: 60),
+              decoration: const BoxDecoration(
+                color: Color(0xFF0C356A),
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(50.0),
+                  bottomLeft: Radius.circular(50.0),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                width: screenWidth - 32.0,
-                height: 120,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF1CC2CD),
-                    width: 2.0,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: EdgeInsets.only(left: 16.0, top: 8.0),
-                            child: Text(
-                              'Welcome',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(left: 16.0),
-                            child: Text(
-                              'Facilities Report',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
+                          Text(
+                            'Selamat Datang',
+                            style: TextStyle(color: Colors.white, fontSize: 28),
                           ),
                         ],
                       ),
-                    ),
-                    Container(
-                      width: 120,
-                      height: 120 - 15.0,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage('lib/images/pana.png'),
-                          fit: BoxFit.cover,
+                      GestureDetector(
+                        onTap: () {
+                          // Add your navigation logic here
+                          // For example, navigate to a notifications page
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => NotificationPage()));
+                        },
+                        child: const Align(
+                          alignment: Alignment.topRight,
+                          child: Icon(
+                            Icons
+                                .notifications, // Replace with your desired icon
+                            color: Colors.white,
+                            size: 30, // Adjust the icon size as needed
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
+                      )
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.inbox,
-                        title: 'Laporan Masuk',
-                        width: (screenWidth - 32.0) / 2 - 10,
-                        onTap: () {
-                          // Handle button press for 'Laporan Terkirim'
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(builder: (context) => Laporan()),
-                          // );
-                        },
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hi, ${username.toUpperCase()}👋',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16.5),
+                          ),
+                          const SizedBox(
+                            height: 8,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.timer,
-                        title: 'Dalam Penanganan',
-                        width: (screenWidth - 32.0) / 2 - 10,
-                        onTap: () {
-                          // Handle button press for 'Dalam Penanganan'
-                        },
+                      const SizedBox(
+                        height: 8,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.assignment_turned_in,
-                        title: 'Telah Diperbaiki',
-                        width: (screenWidth - 32.0) / 2 - 10,
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 8),
-                      CustomBubbleSquare(
-                        color: const Color(0xFF1CC2CD),
-                        icon: Icons.add,
-                        title: 'Buat Laporan',
-                        width: (screenWidth - 32.0) / 2 - 10,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildMenuButton(
                         onTap: () {
-                          // Handle button press for 'Buat Laporan'
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(builder: (context) => Laporan()),
-                          // );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LaporanMasukDinas(),
+                            ),
+                          );
+                          markLaporanMasukPageOpened();
+                          setState(() {
+                            newReportsCount = 0;
+                          });
                         },
+                        icon: Icons.inbox,
+                        label: 'Laporan\nMasuk',
+                        badgeCount: newReportsCount,
+                      ),
+                      _buildMenuButton(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DalamPengerjaan(),
+                            ),
+                          );
+                          markLaporanMasukPageOpened();
+                          setState(() {
+                            newReportsCount = 0;
+                          });
+                        },
+                        icon: Icons.timer,
+                        label: 'Dalam \nPengerjaan',
+                        badgeCount: newReportsCount,
+                      ),
+                      _buildMenuButton(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LaporanSelesai(),
+                            ),
+                          );
+                          markLaporanMasukPageOpened();
+                          setState(() {
+                            newReportsCount = 0;
+                          });
+                        },
+                        icon: Icons.verified,
+                        label: 'Laporan\nSelesai',
+                        badgeCount: newReportsCount,
+                      ),
+                      // _buildMenuButton(
+                      //   onTap: () {
+                      //     Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => const NambahUser(),
+                      //       ),
+                      //     );
+                      //   },
+                      //   icon: Icons.person_add,
+                      //   label: 'Tambahkan\nPengguna',
+                      // ),
+                      _buildMenuButton(
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => UserList()));
+                        },
+                        icon: Icons.person_add,
+                        label: 'Kelola\nPengguna',
                       ),
                     ],
                   ),
                 ],
               ),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -35),
+              child: Container(
+                height: 60,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 25, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 25),
+                decoration: BoxDecoration(
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.grey,
+                      blurRadius: 20.0,
+                      offset: Offset(0, 10.0),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                ),
+                child: TextField(
+                  controller: searchController,
+                  onChanged: (query) {
+                    filterReports(query);
+                  },
+                  decoration: const InputDecoration(
+                    suffixIcon: Icon(
+                      Icons.search,
+                      color: Colors.black,
+                      size: 20.0,
+                    ),
+                    border: InputBorder.none,
+                    hintText: 'Telusuri',
+                  ),
+                ),
+              ),
+            ),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.only(left: 25, right: 25, bottom: 8),
+                  child: Text(
+                    'Laporan', // Add your text here
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.start,
+                  ),
+                ),
+              ],
+            ),
+            ProgresLaporan(
+              userRole: 'dinas',
+              maxItemsToShow: 3,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton({
+    required VoidCallback onTap,
+    required IconData icon,
+    required String label,
+    int? badgeCount,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Align(
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.rectangle,
+                    color: const Color(0xFF7895CB),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                if (badgeCount != null && badgeCount > 0)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

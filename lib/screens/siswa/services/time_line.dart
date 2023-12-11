@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fast_it_2/utils/package.dart';
+import 'package:fast_it_2/components/widget/package.dart';
 
 class TimeLine extends StatefulWidget {
   const TimeLine({super.key});
