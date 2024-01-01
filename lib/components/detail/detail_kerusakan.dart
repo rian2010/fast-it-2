@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,11 +42,31 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
     super.initState();
     _loadButtonState();
     fetchData = _getData();
+    fetchRatingFromDatabase();
+
     reportStream = FirebaseFirestore.instance
         .collection('reports')
         .doc(widget.documentId)
         .snapshots();
     _checkUserRole();
+  }
+
+  Future<void> fetchRatingFromDatabase() async {
+    try {
+      // Fetch the 'penilaian' field from the database
+      DocumentSnapshot reportSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(widget.documentId)
+          .get();
+
+      if (reportSnapshot.exists) {
+        setState(() {
+          rating = (reportSnapshot.data() as dynamic)['penilaian'] ?? 0.0;
+        });
+      }
+    } catch (e) {
+      print('Error fetching rating from the database: $e');
+    }
   }
 
   Future<Map<String, dynamic>> _getData() async {
@@ -126,9 +146,9 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
               appBar: _buildAppBar(data),
               body: buildBody(data),
               bottomNavigationBar: buildBottomNavigationBar(data),
-              floatingActionButton: data['status'] == 'Diverifikasi'
-                  ? _buildFloatingActionButton()
-                  : null,
+              // floatingActionButton: data['status'] == 'Diverifikasi'
+              //     ? _buildFloatingActionButton()
+              //     : null,
             );
           },
         );
@@ -148,9 +168,11 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
     String jenisKerusakan = data['kerusakan'] ?? 'Jenis Kerusakan';
     String deskripsi = data['deskripsi'] ?? 'Deskripsi Kerusakan';
     String selectedTechnician = data['selectedTechnician'] ?? 'Teknisi';
+    String sekolah = data['sekolah'] ?? 'Sekolah';
     // String verificationDateTime = data['verificationDateTime'] ?? 'time';
 
     List<String> imagePaths = List<String>.from(data['fileUrls'] ?? []);
+    List<String> buktiLaporan = List<String>.from(data['buktiLaporan'] ?? []);
 
     return SingleChildScrollView(
       child: Column(
@@ -158,9 +180,13 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
         children: [
           buildImageCarousel(imagePaths),
           buildImageList(imagePaths),
-          buildReportDetails(
-              data, ruangan, jenisKerusakan, deskripsi, selectedTechnician),
-          if (data['status'] == 'Selesai') buildStatusSelesai()
+          buildReportDetails(data, ruangan, jenisKerusakan, deskripsi,
+              selectedTechnician, sekolah),
+          if (data['status'] == 'Diverifikasi') buildTechnicianButton(),
+          if (data['status'] == 'Selesai') buildStatusSelesai(buktiLaporan),
+          const SizedBox(height: 8),
+          if (data['status'] == 'Selesai') buildRatingBar(),
+          const SizedBox(height: 18)
         ],
       ),
     );
@@ -260,18 +286,12 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
   }
 
   Widget buildReportDetails(
-    Map<String, dynamic> data,
-    String ruangan,
-    String jenisKerusakan,
-    String deskripsi,
-    String selectedTechnician,
-  ) {
-    Timestamp verificationTimestamp =
-        data['verificationDateTime'] ?? Timestamp.now();
-    DateTime verificationDateTime = verificationTimestamp.toDate();
-    String formattedVerificationDateTime =
-        DateFormat('yyyy-MM-dd HH:mm').format(verificationDateTime);
-
+      Map<String, dynamic> data,
+      String ruangan,
+      String jenisKerusakan,
+      String deskripsi,
+      String selectedTechnician,
+      String sekolah) {
     return Container(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -280,27 +300,24 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
           buildReportHeader(data),
           const SizedBox(height: 16.0),
           buildText('Jenis Kerusakan:', 18.0, FontWeight.bold, Colors.grey),
-          const SizedBox(height: 16.0),
+          const SizedBox(height: 10.0),
           buildText(jenisKerusakan, 15.0, null, null),
           const SizedBox(height: 16.0),
-          buildText('Deskripsi:', 18.0, FontWeight.bold, Colors.grey),
+          buildText('Nama Sekolah', 18.0, FontWeight.bold, Colors.grey),
+          const SizedBox(height: 10.0),
+          buildText(sekolah, 15.0, null, null),
           const SizedBox(height: 16.0),
+          buildText('Deskripsi:', 18.0, FontWeight.bold, Colors.grey),
+          const SizedBox(height: 10.0),
           buildText(deskripsi, 15.0, null, null),
           const SizedBox(height: 16.0),
           if (data['status'] == 'Diverifikasi') buildVerificationForm(data),
-          // if (data['status'] == 'Diverifikasi') ...[
-          //   buildVerificationForm(),
-          //   buildText(
-          //       'Tanggal Verifikasi:', 18.0, FontWeight.bold, Colors.grey),
-          //   const SizedBox(height: 16.0),
-          //   buildText(formattedVerificationDateTime, 15.0, null, null),
-          // ],
           if (data['status'] == 'Dalam Pengerjaan' ||
               data['status'] == 'Selesai') ...[
             buildText('Teknisi:', 18.0, FontWeight.bold, Colors.grey),
-            const SizedBox(height: 16.0),
+            const SizedBox(height: 10.0),
             buildText(selectedTechnician, 15.0, null, null),
-            if (data['status'] == 'Dalam Pengerjaan') buildSelesaiButton()
+            if (data['status'] == 'Dalam Pengerjaan') buildSelesaiButton(),
           ],
         ],
       ),
@@ -371,6 +388,13 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
     }
   }
 
+  String? _validateTeknisi(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Pilih Teknisi terlebih dahulu';
+    }
+    return null;
+  }
+
   Widget buildVerificationForm(Map<String, dynamic> data) {
     if (shouldShowFormAndButton) {
       return Form(
@@ -401,12 +425,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
                       suggestion; // Set the selected technician
                 });
               },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please select an option';
-                }
-                return null;
-              },
+              validator: _validateTeknisi,
               suggestionsBoxDecoration: SuggestionsBoxDecoration(
                 color: Colors.white,
                 elevation: 5,
@@ -414,7 +433,6 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
               ),
               direction: AxisDirection.up,
             ),
-            const SizedBox(height: 16.0),
           ],
         ),
       );
@@ -568,7 +586,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
       desc: ('Apakah anda ingin meneruskan laporan ini ke dinas pendidikan?'),
       descTextStyle: TextStyle(),
       btnOkOnPress: () async {
-        debugPrint('Berhasil diverifikasi');
+        debugPrint('Berhasil Diteruskan');
         await FirebaseFirestore.instance
             .collection('reports')
             .doc(widget.documentId)
@@ -576,6 +594,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
           'status': 'Diteruskan ke Dinas',
           'verificationDateTime': FieldValue.serverTimestamp(),
         });
+        showSuccessDialog('Berhasil diteruskan');
       },
       btnCancelOnPress: () async {
         debugPrint('Berhasil diverifikasi');
@@ -586,6 +605,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
           'status': 'Ditangani Sekolah',
           'verificationDateTime': FieldValue.serverTimestamp(),
         });
+        Navigator.pop(context);
       },
       btnCancelText: ('Terima'),
       btnOkColor: const Color(0xFF0C356A),
@@ -594,6 +614,20 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
       onDismissCallback: (type) {
         debugPrint('Dialog Dissmiss from callback $type');
       },
+    ).show();
+  }
+
+  void showSuccessDialog(String message) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.success, // You can change the type as needed
+      animType: AnimType.bottomSlide,
+      title: 'Berhasil',
+      desc: message,
+      btnOkOnPress: () {
+        Navigator.pop(context);
+      },
+      btnOkText: 'OK',
     ).show();
   }
 
@@ -637,59 +671,126 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
         '${widget.documentId}_selectedTechnician', selectedTechnician);
   }
 
-  FloatingActionButton? _buildFloatingActionButton() {
-    return shouldShowFormAndButton
-        ? FloatingActionButton(
-            onPressed: () {
-              AwesomeDialog(
-                context: context,
-                animType: AnimType.leftSlide,
-                headerAnimationLoop: false,
-                dialogType: DialogType.success,
-                showCloseIcon: true,
-                title: 'Berhasil',
-                desc: 'Verifikasi Berhasil',
-                btnOkOnPress: () async {
-                  if (selectedTechnician.isNotEmpty) {
-                    // Add your code to update the document with the selected technician
-                    await FirebaseFirestore.instance
-                        .collection('reports')
-                        .doc(widget.documentId)
-                        .update({
-                      'selectedTechnician': selectedTechnician,
-                      'status':
-                          'Dalam Pengerjaan', // Update the status to 'Diverifikasi'
-                    }).then((value) async {
-                      // Save the state in SharedPreferences
-                      await _saveButtonState();
+  Widget buildTechnicianButton() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        child: ElevatedButton(
+          onPressed: () async {
+            if (_formKey.currentState!.validate()) {
+              if (selectedTechnician.isNotEmpty) {
+                await FirebaseFirestore.instance
+                    .collection('reports')
+                    .doc(widget.documentId)
+                    .update({
+                  'selectedTechnician': selectedTechnician,
+                  'status': 'Dalam Pengerjaan',
+                }).then((value) async {
+                  await _saveButtonState();
 
-                      // Update the state to hide the form and FloatingActionButton
-                      setState(() {
-                        shouldShowFormAndButton = false;
-                      });
-                      // Add any additional actions or feedback you want to provide
-                      debugPrint('Selected technician updated successfully');
-                    }).catchError((error) {
-                      debugPrint('Error updating selected technician: $error');
-                    });
-                  } else {
-                    // Handle the case where no technician is selected
-                    debugPrint('Please select a technician before submitting');
-                  }
-                },
-                btnOkIcon: Icons.check_circle,
-                onDismissCallback: (type) {
-                  debugPrint('Dialog Dissmiss from callback $type');
-                },
-              ).show();
-            },
+                  debugPrint('Selected technician updated successfully');
+                }).catchError((error) {
+                  debugPrint('Error updating selected technician: $error');
+                });
+              } else {
+                debugPrint('Please select a technician before submitting');
+              }
+            }
+            veriicationDialog();
+          },
+          style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0C356A),
-            child: const Icon(Icons.send),
-          )
-        : null;
+            padding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 32.0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50.0),
+            ),
+          ),
+          child: const Text(
+            'Kirim',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget buildStatusSelesai() {
+  void veriicationDialog() {
+    AwesomeDialog(
+      context: context,
+      animType: AnimType.leftSlide,
+      headerAnimationLoop: false,
+      dialogType: DialogType.success,
+      showCloseIcon: true,
+      title: 'Berhasil',
+      desc: 'Berhasil Ditugaskan',
+      btnOkOnPress: () {},
+      btnOkIcon: Icons.check_circle,
+      onDismissCallback: (type) {
+        debugPrint('Dialog Dissmiss from callback $type');
+      },
+    ).show();
+  }
+
+  Widget buildStatusSelesai(List<String> buktiLaporan) {
+    bool isBuktiLaporanSent = buktiLaporan.isNotEmpty;
+
+    return isBuktiLaporanSent
+        ? buildLaporanSelesai(context, buktiLaporan)
+        : _buildStatusSelesaiWidget();
+  }
+
+  Widget _buildStatusSelesaiWidget() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildText('Bukti: ', 18, FontWeight.bold, Colors.grey),
+              const SizedBox(height: 8),
+              uploadBukti(),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+        buildBottomButton(),
+      ],
+    );
+  }
+
+  Widget buildRatingBar() {
+    final starSize = 48.0; // Adjust the size as needed
+
+    return Center(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) {
+              return Icon(
+                index < rating.ceil() ? Icons.star : Icons.star_border,
+                color: Colors.amber,
+                size: starSize,
+              );
+            }),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget buildLaporanSelesai(BuildContext context, List<String> buktiLaporan) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -700,12 +801,40 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
             children: [
               buildText('Bukti', 18, FontWeight.bold, Colors.grey),
               const SizedBox(height: 8),
-              uploadBukti(),
+              buildImage(buktiLaporan),
+              const SizedBox(height: 8),
             ],
           ),
         ),
-        buildBottomButton(),
       ],
+    );
+  }
+
+  Widget buildImage(List<String> buktiLaporan) {
+    return Container(
+      color: Colors.white,
+      child: Center(
+        child: SizedBox(
+          width: double.infinity,
+          height: 250,
+          child: Image.network(
+            buktiLaporan.isNotEmpty
+                ? buktiLaporan[0]
+                : '', // Display the first image if available
+            fit: BoxFit.fitWidth,
+            loadingBuilder: (BuildContext context, Widget child,
+                ImageChunkEvent? loadingProgress) {
+              if (loadingProgress == null) {
+                return child;
+              } else {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+            },
+          ),
+        ),
+      ),
     );
   }
 
@@ -796,11 +925,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
   void _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: [
-        'jpg',
-        'jpeg',
-        'png',
-      ],
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
       allowMultiple: true,
     );
 
@@ -816,7 +941,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
       source: ImageSource.camera,
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() {
         filePaths.add(result.path);
       });
@@ -838,7 +963,7 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
 
   Widget _buildSelectedImageWidget(String imagePath) {
     return SizedBox(
-      width: 100.0,
+      width: 310.0,
       height: 100.0,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -958,8 +1083,6 @@ class _KerusakanDetailState extends State<KerusakanDetail> {
               },
               btnCancelOnPress: () {},
               btnOkColor: const Color(0xFF0C356A),
-              btnOkIcon: Icons.check_circle,
-              btnCancelIcon: Icons.cancel,
               btnCancelText: ('Batalkan'),
               onDismissCallback: (type) {
                 debugPrint('Dialog Dissmiss from callback $type');

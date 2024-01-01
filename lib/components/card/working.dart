@@ -1,17 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/components/detail/detail_laporan.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fast_it_2/components/detail/detail_kerusakan.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-class CardDalamPengerjaan extends StatelessWidget {
-  const CardDalamPengerjaan({Key? key});
+class DalamPengerjaanCard extends StatelessWidget {
+  const DalamPengerjaanCard({Key? key});
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final userId = user?.uid;
-
     CollectionReference reportsCollection =
         FirebaseFirestore.instance.collection('reports');
 
@@ -21,7 +17,6 @@ class CardDalamPengerjaan extends StatelessWidget {
             'status',
             isEqualTo: 'Dalam Pengerjaan',
           )
-          .where('userId', isEqualTo: userId)
           .snapshots(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -42,7 +37,7 @@ class CardDalamPengerjaan extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DetailPage(
+                      builder: (context) => KerusakanDetail(
                         documentId: document.id,
                       ),
                     ),
@@ -199,17 +194,8 @@ class CardDalamPengerjaan extends StatelessWidget {
             }).toList(),
           );
         } else {
-          // Handle the case where there is no data
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 550, // Adjust the height of the Lottie animation
-                  child: Lottie.asset('lib/animation/datanotfound.json'),
-                ),
-              ],
-            ),
+            child: Lottie.asset('lib/animation/datanotfound.json'),
           );
         }
       },

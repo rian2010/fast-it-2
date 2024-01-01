@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:fast_it_2/components/widget/package.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -23,21 +24,39 @@ class _DetailLaporanSelesaiState extends State<DetailLaporanSelesai> {
   bool laporanDibatalkan = false;
   double rating = 0.0;
   final PageController _pageController = PageController();
+  final String isRatingSubmittedKey = 'isRatingSubmitted';
+  late Stream<DocumentSnapshot> reportStream;
+  late Future<Map<String, dynamic>> fetchData;
 
   @override
   void initState() {
     super.initState();
     _loadButtonState();
+    fetchData = _getData();
+    reportStream = FirebaseFirestore.instance
+        .collection('reports')
+        .doc(widget.documentId)
+        .snapshots();
+  }
+
+  Future<Map<String, dynamic>> _getData() async {
+    var snapshot = await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(widget.documentId)
+        .get();
+
+    if (snapshot.exists) {
+      return snapshot.data() as Map<String, dynamic>;
+    } else {
+      return {};
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('reports')
-          .doc(widget.documentId)
-          .snapshots(),
-      builder: (context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: fetchData,
+      builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: SizedBox(
@@ -52,17 +71,33 @@ class _DetailLaporanSelesaiState extends State<DetailLaporanSelesai> {
           return Text('Error: ${snapshot.error}');
         }
 
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return Container();
-        }
+        var data = snapshot.data!;
 
-        var data = snapshot.data!.data() as Map<String, dynamic>;
+        return StreamBuilder<DocumentSnapshot>(
+          stream: reportStream,
+          builder: (context, AsyncSnapshot<DocumentSnapshot> streamSnapshot) {
+            if (streamSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: SizedBox(
+                  width: 40.0,
+                  height: 40.0,
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
 
-        return Scaffold(
-          appBar: _buildAppBar(data),
-          body: buildBody(data),
+            if (streamSnapshot.hasError) {
+              return Text('Error: ${streamSnapshot.error}');
+            }
+
+            data = streamSnapshot.data!.data() as Map<String, dynamic>;
+
+            return Scaffold(
+              appBar: _buildAppBar(data),
+              body: buildBody(data),
+            );
+          },
         );
-        // Extract relevant data from Firestore document
       },
     );
   }
@@ -165,6 +200,8 @@ class _DetailLaporanSelesaiState extends State<DetailLaporanSelesai> {
             onTap: () {
               setState(() {
                 selectedImageIndex = index;
+                print("Selected Image Index: $index");
+
                 _pageController.animateToPage(
                   index,
                   duration: const Duration(milliseconds: 500),
@@ -186,19 +223,6 @@ class _DetailLaporanSelesaiState extends State<DetailLaporanSelesai> {
               child: Image.network(
                 imagePaths[index],
                 fit: BoxFit.cover,
-                loadingBuilder: (BuildContext context, Widget child,
-                    ImageChunkEvent? loadingProgress) {
-                  if (loadingProgress == null) {
-                    return child;
-                  } else {
-                    return const Center(
-                      child: SpinKitCircle(
-                        color: Colors.blue, // Change the color as needed
-                        size: 50.0, // Change the size as needed
-                      ),
-                    );
-                  }
-                },
               ),
             ),
           );
@@ -440,31 +464,43 @@ class _DetailLaporanSelesaiState extends State<DetailLaporanSelesai> {
   }
 
   Widget buildImage(List<String> buktiLaporan) {
-    return Container(
-      color: Colors.white,
-      child: Center(
-        child: SizedBox(
-          width: double.infinity,
-          height: 250,
-          child: Image.network(
-            buktiLaporan.isNotEmpty
-                ? buktiLaporan[0]
-                : '', // Display the first image if available
-            fit: BoxFit.fitWidth,
-            loadingBuilder: (BuildContext context, Widget child,
-                ImageChunkEvent? loadingProgress) {
-              if (loadingProgress == null) {
-                return child;
-              } else {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-            },
+    if (buktiLaporan.isNotEmpty) {
+      return Container(
+        color: Colors.white,
+        child: Center(
+          child: SizedBox(
+            width: double.infinity,
+            height: 250,
+            child: Image.network(
+              buktiLaporan[0],
+              fit: BoxFit.fitWidth,
+              loadingBuilder: (BuildContext context, Widget child,
+                  ImageChunkEvent? loadingProgress) {
+                if (loadingProgress == null) {
+                  return child;
+                } else {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+              },
+            ),
           ),
         ),
-      ),
-    );
+      );
+    } else {
+      return Container(
+        color: Colors.white,
+        child: Center(
+          child: SizedBox(
+            width: double.infinity,
+            height: 250,
+            child: Lottie.asset(
+                'lib/animation/notfound.json'), // Replace with your Lottie animation asset path
+          ),
+        ),
+      );
+    }
   }
 
   Widget buildRatingBar() {

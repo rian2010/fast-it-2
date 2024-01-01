@@ -1,6 +1,3 @@
-import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:fast_it_2/auth/services/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class NambahUser extends StatefulWidget {
@@ -11,345 +8,282 @@ class NambahUser extends StatefulWidget {
 }
 
 class _NambahUserState extends State<NambahUser> {
-  final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  String? _selectedRole;
+  String selectedRole = 'siswa'; // Default role
+  String? gender;
+  final List<String> genderOptions = ["Perempuan", "Laki-laki"];
   bool _isObscure = true;
   bool _isPasswordEightCharacters = false;
   bool _hasPasswordOneNumber = false;
+
+  TextEditingController _emailController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
+  TextEditingController _confirmPasswordController = TextEditingController();
+  TextEditingController _usernameController = TextEditingController();
+
   bool _isRegistering = false;
-  OverlayEntry? _overlayEntry;
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final FirebaseService _firebaseService = FirebaseService();
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  void _togglePasswordVisibility() {
-    setState(() {
-      _isObscure = !_isObscure;
-    });
-  }
-
-  void _onPasswordChanged(String password) {
-    final numericRegex = RegExp(r'[0-9]');
-
-    setState(() {
-      _isPasswordEightCharacters = password.length >= 8;
-      _hasPasswordOneNumber = numericRegex.hasMatch(password);
-    });
-  }
-
-  void _showLoadingOverlay() {
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned.fill(
-        child: Container(
-          color: Colors.black.withOpacity(0.5),
-          child: const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(_overlayEntry!);
-  }
-
-  void _removeLoadingOverlay() {
-    if (_overlayEntry != null) {
-      _overlayEntry!.remove();
-      _overlayEntry = null;
-    }
-  }
-
-  String? _validateNotEmpty(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Form ini wajib diisi';
-    }
-    return null;
-  }
-
-  String? _validatePasswordConfirmation(String? value) {
-    if (value != _passwordController.text) {
-      return 'Kata sandi tidak sama';
-    }
-    return null;
-  }
-
-  Future<bool> _isEmailInUse(String email) async {
-    try {
-      final result =
-          await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
-      return result.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  void _signUp(String email, String password, String confirmPassword,
-      String username, String? selectedRole) async {
-    if (_formKey.currentState!.validate()) {
-      // Check password requirements
-      if (!_isPasswordEightCharacters || !_hasPasswordOneNumber) {
-        setState(() {
-          _isRegistering = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Kata sandi harus memiliki minimal 8 karakter dan setidaknya 1 angka.'),
-          ),
-        );
-        return;
-      }
-
-      _showLoadingOverlay();
-      setState(() {
-        _isRegistering = true;
-      });
-
-      if (password == confirmPassword) {
-        try {
-          User? user = await _firebaseService.signUp(email, password, username);
-
-          if (user != null) {
-            _completeSignup();
-          }
-        } catch (e) {
-          debugPrint("Registration error: $e");
-        } finally {
-          _removeLoadingOverlay();
-          setState(() {
-            _isRegistering = false;
-          });
-        }
-      } else {
-        debugPrint("Kata sandi tidak sama");
-        setState(() {
-          _isRegistering = false;
-        });
-      }
-    }
-  }
-
-  void _completeSignup() {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: false,
-      dialogType: DialogType.success,
-      showCloseIcon: true,
-      title: 'Berhasil',
-      desc: 'Akun Berhasil Ditambahkan',
-      btnOkOnPress: () {},
-      btnOkIcon: Icons.check_circle,
-      onDismissCallback: (type) {},
-    ).show();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Tambahkan Akun',
-        ),
+        title: Text('Tambahkan Akun'),
         backgroundColor: Color(0xFF0C356A),
-        elevation: 0.0,
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    width: 300,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          controller: _usernameController,
-                          decoration: InputDecoration(
-                            hintText: "Nama Lengkap",
-                            labelText: 'Nama Lengkap',
-                            contentPadding: const EdgeInsets.all(10),
-                            prefixIcon: const Icon(Icons.person),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                          ),
-                          validator: _validateNotEmpty,
-                        ),
-                      ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              DropdownButton<String>(
+                value: selectedRole,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedRole = newValue!;
+                  });
+                },
+                items: <String>['siswa', 'staff', 'dinas'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+              if (selectedRole == 'siswa' ||
+                  selectedRole == 'staff' ||
+                  selectedRole == 'dinas')
+                buildForm(),
+              if (selectedRole == 'siswa' ||
+                  selectedRole == 'staff' ||
+                  selectedRole == 'dinas')
+                _buildRegistrationButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildForm() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: 300,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildTextFormField(
+                hintText: "Nama Lengkap",
+                labelText: "Nama Lengkap",
+                prefixIcon: Icons.person,
+              ),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: buildTextFormField(
+                      hintText: "Nomor HP",
+                      labelText: "Nomor HP",
+                      prefixIcon: Icons.phone,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: 300,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            hintText: 'Email',
-                            labelText: 'Email',
-                            contentPadding: const EdgeInsets.all(10),
-                            prefixIcon: const Icon(Icons.mail),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                          ),
-                          validator: _validateNotEmpty,
-                        ),
-                      ],
+                  SizedBox(width: 16), // Adjust the spacing as needed
+                  if (selectedRole == 'siswa' ||
+                      selectedRole == 'staff' ||
+                      selectedRole == 'dinas')
+                    Expanded(
+                      child: buildTextFormField(
+                        hintText:
+                            selectedRole == 'staff' || selectedRole == 'dinas'
+                                ? "NIP"
+                                : "NIS",
+                        labelText:
+                            selectedRole == 'staff' || selectedRole == 'dinas'
+                                ? "NIP"
+                                : "NIS",
+                        prefixIcon: Icons.school,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: 300,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            hintText: 'Pilih Peran',
-                            labelText: 'Peran',
-                            contentPadding: const EdgeInsets.all(10),
-                            prefixIcon: const Icon(Icons.person),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                          ),
-                          value: _selectedRole,
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedRole = newValue;
-                            });
-                          },
-                          items: [
-                            'Siswa',
-                            'Staff',
-                            'Dinas'
-                          ] // Add more roles if needed
-                              .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          validator: _validateNotEmpty,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: 300,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          onChanged: _onPasswordChanged,
-                          obscureText: _isObscure,
-                          controller: _passwordController,
-                          decoration: InputDecoration(
-                            hintText: 'Kata Sandi',
-                            labelText: 'Kata Sandi',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.all(10),
-                            prefixIcon: const Icon(Icons.lock),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isObscure
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                color: Colors.grey,
-                              ),
-                              onPressed: _togglePasswordVisibility,
-                            ),
-                          ),
-                          validator: _validateNotEmpty,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: 300,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          obscureText: _isObscure,
-                          controller: _confirmPasswordController,
-                          decoration: InputDecoration(
-                            hintText: "Konfirmasi Kata Sandi",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1CC2CD),
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.all(10),
-                            prefixIcon: const Icon(Icons.lock),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isObscure
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                color: Colors.grey,
-                              ),
-                              onPressed: _togglePasswordVisibility,
-                            ),
-                          ),
-                          validator: _validatePasswordConfirmation,
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildPasswordStrengthIndicator(
-                    text: "Minimal Memiliki 8 karakter",
-                    indicator: _isPasswordEightCharacters,
-                  ),
-                  _buildPasswordStrengthIndicator(
-                    text: "Minimal Memiliki 1 Angka",
-                    indicator: _hasPasswordOneNumber,
-                  ),
-                  _buildRegistrationButton(),
-                  const SizedBox(height: 10),
                 ],
               ),
+              SizedBox(height: 16),
+              if (selectedRole == 'siswa' || selectedRole == 'staff')
+                buildTextFormField(
+                  hintText: "Nama Sekolah",
+                  labelText: "Nama Sekolah",
+                  prefixIcon: Icons.school,
+                ),
+              if (selectedRole == 'siswa' || selectedRole == 'staff')
+                SizedBox(height: 16),
+              buildGenderDropdown(),
+              SizedBox(height: 16),
+              buildTextFormField(
+                hintText: "Email",
+                labelText: "Email",
+                prefixIcon: Icons.email,
+              ),
+              SizedBox(height: 16),
+              buildPasswordTextFormField(
+                onchanged: _onPasswordChanged,
+                hintText: "Kata Sandi",
+                labelText: "Kata Sandi",
+                prefixIcon: Icons.lock,
+                obscureText: true,
+              ),
+              SizedBox(height: 16),
+              buildTextFormField(
+                hintText: "Konfirmasi Kata Sandi",
+                labelText: "Konfirmasi Kata Sandi",
+                prefixIcon: Icons.lock,
+                obscureText: true,
+              ),
+              _buildPasswordStrengthIndicator(
+                text: "Minimal Memiliki 8 karakter",
+                indicator: _isPasswordEightCharacters,
+              ),
+              _buildPasswordStrengthIndicator(
+                text: "Minimal Memiliki 1 Angka",
+                indicator: _hasPasswordOneNumber,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildTextFormField({
+    required String hintText,
+    required String labelText,
+    required IconData prefixIcon,
+    bool obscureText = false,
+  }) {
+    return TextFormField(
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        hintText: hintText,
+        labelText: labelText,
+        contentPadding: const EdgeInsets.all(10),
+        prefixIcon: Icon(prefixIcon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: Color(0xFF1CC2CD),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildPasswordTextFormField({
+    required String hintText,
+    required String labelText,
+    required IconData prefixIcon,
+    required onchanged,
+    bool obscureText = false,
+  }) {
+    return TextFormField(
+      obscureText: _isObscure,
+      onChanged: (value) {
+        _onPasswordChanged(value);
+        onchanged(value);
+      },
+      decoration: InputDecoration(
+        hintText: hintText,
+        labelText: labelText,
+        contentPadding: const EdgeInsets.all(10),
+        prefixIcon: Icon(prefixIcon),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isObscure ? Icons.visibility : Icons.visibility_off,
+          ),
+          onPressed: _togglePasswordVisibility,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: Color(0xFF1CC2CD),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildGenderDropdown() {
+    return SizedBox(
+      width: 300,
+      child: DropdownButtonFormField<String>(
+        value: gender,
+        items: genderOptions.map((String option) {
+          return DropdownMenuItem<String>(
+            value: option,
+            child: Text(
+              option,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
+          );
+        }).toList(),
+        onChanged: (String? newValue) {
+          setState(() {
+            gender = newValue;
+          });
+        },
+        decoration: InputDecoration(
+          hintText: "Pilih Gender",
+          contentPadding: EdgeInsets.all(10),
+          prefixIcon: const Icon(Icons.person),
+          border: OutlineInputBorder(
+            borderSide: BorderSide(
+              color: Colors.grey,
+              width: 1.0,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegistrationButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Container(
+        child: MaterialButton(
+          minWidth: double.infinity,
+          height: 60,
+          onPressed: _isRegistering
+              ? null
+              : () async {
+                  String email = _emailController.text.trim();
+                  String password = _passwordController.text.trim();
+                  String confirmPassword =
+                      _confirmPasswordController.text.trim();
+                  String username = _usernameController.text.trim();
+
+                  _signUp(email, password, confirmPassword, username);
+                },
+          color: const Color(0xFF0C356A),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _isRegistering
+                ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                : const Text(
+                    "Daftar",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -394,57 +328,27 @@ class _NambahUserState extends State<NambahUser> {
     );
   }
 
-  Widget _buildRegistrationButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Container(
-        padding: const EdgeInsets.only(top: 3, left: 3),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50),
-          border: const Border(
-            bottom: BorderSide(color: Colors.black),
-            top: BorderSide(color: Colors.black),
-            left: BorderSide(color: Colors.black),
-            right: BorderSide(color: Colors.black),
-          ),
-        ),
-        child: MaterialButton(
-          minWidth: double.infinity,
-          height: 60,
-          onPressed: _isRegistering
-              ? null
-              : () async {
-                  String email = _emailController.text.trim();
-                  String password = _passwordController.text.trim();
-                  String confirmPassword =
-                      _confirmPasswordController.text.trim();
-                  String username = _usernameController.text.trim();
+  void _signUp(
+    String email,
+    String password,
+    String confirmPassword,
+    String username,
+  ) {
+    // Implement your sign-up logic here
+  }
 
-                  _signUp(email, password, confirmPassword, username,
-                      _selectedRole);
-                },
-          color: const Color(0xFF0C356A),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(50),
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _isRegistering
-                ? const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  )
-                : const Text(
-                    "Tambahkan",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isObscure = !_isObscure;
+    });
+  }
+
+  void _onPasswordChanged(String password) {
+    final numericRegex = RegExp(r'[0-9]');
+
+    setState(() {
+      _isPasswordEightCharacters = password.length >= 8;
+      _hasPasswordOneNumber = numericRegex.hasMatch(password);
+    });
   }
 }

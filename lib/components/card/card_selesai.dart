@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/components/detail/laporan_selesai.dart';
+import 'package:fast_it_2/components/detail/detail_laporan.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 class CardLaporanSelesai extends StatelessWidget {
-  const CardLaporanSelesai({Key? key});
+  final String? userRole;
+
+  const CardLaporanSelesai({Key? key, this.userRole});
 
   @override
   Widget build(BuildContext context) {
@@ -15,11 +17,18 @@ class CardLaporanSelesai extends StatelessWidget {
     CollectionReference reportsCollection =
         FirebaseFirestore.instance.collection('reports');
 
+    Query reportsQuery =
+        reportsCollection.where('status', isEqualTo: 'Selesai');
+
+    // Apply additional filters based on user role
+    if (userRole == 'dinas') {
+    } else {
+      // For staff or siswa, filter based on userId
+      reportsQuery = reportsQuery.where('userId', isEqualTo: userId);
+    }
+
     return StreamBuilder<QuerySnapshot>(
-      stream: reportsCollection
-          .where('status', isEqualTo: 'Selesai')
-          .where('userId', isEqualTo: userId)
-          .snapshots(),
+      stream: reportsQuery.snapshots(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -39,7 +48,7 @@ class CardLaporanSelesai extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DetailLaporanSelesai(
+                      builder: (context) => DetailPage(
                         documentId: document.id,
                       ),
                     ),

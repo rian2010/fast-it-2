@@ -15,7 +15,7 @@ class UserList extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User List'),
+        title: const Text('Pengguna'),
         backgroundColor: const Color(0xFF0C356A),
         actions: [
           IconButton(
@@ -70,13 +70,23 @@ class UserList extends StatelessWidget {
           itemCount: userList.length,
           itemBuilder: (context, index) {
             User user = userList[index];
-            return ListTile(
-              leading: CircleAvatar(
-                child: const Icon(Icons.person),
+            return GestureDetector(
+              onLongPress: () {
+                // Show your modal here
+                showModal(context, user);
+              },
+              onTap: () {
+                // Handle tap on the ListTile (e.g., navigate to user profile)
+                // Add your logic here...
+              },
+              child: ListTile(
+                leading: CircleAvatar(
+                  child: const Icon(Icons.person),
+                ),
+                title: Text(user.name),
+                subtitle: Text(user.isOnline ? 'Online' : 'Offline'),
+                trailing: _buildOnlineIndicator(user.isOnline),
               ),
-              title: Text(user.name),
-              subtitle: Text(user.isOnline ? 'Online' : 'Offline'),
-              trailing: _buildOnlineIndicator(user.isOnline),
             );
           },
         );
@@ -108,8 +118,6 @@ class UserList extends StatelessWidget {
   }
 
   bool isUserDinas(User user) {
-    // Replace this with your actual logic to check if the user has the "Dinas" role.
-    // For example, you might have a field 'role' in your user data.
     print('Checking role for user: ${user.name}, Role: ${user.role}');
     return user.role == 'Dinas';
   }
@@ -118,6 +126,46 @@ class UserList extends StatelessWidget {
     final FirebaseAuth.User? user =
         FirebaseAuth.FirebaseAuth.instance.currentUser;
     return user?.uid ?? '';
+  }
+
+  void showModal(BuildContext context, User user) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('User: ${user.name}', style: TextStyle(fontSize: 18)),
+              SizedBox(height: 8),
+              Text('Role: ${user.role}',
+                  style: TextStyle(fontSize: 15, color: Colors.grey)),
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.red),
+                title: Text('Hapus Akun', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  // Handle "Hapus Akun" logic here
+                  print('Hapus Akun');
+                  Navigator.pop(context); // Close the modal
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.lock, color: Colors.blue),
+                title: Text('Ganti Password',
+                    style: TextStyle(color: Colors.blue)),
+                onTap: () {
+                  // Handle "Ganti Password" logic here
+                  print('Ganti Password');
+                  Navigator.pop(context); // Close the modal
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

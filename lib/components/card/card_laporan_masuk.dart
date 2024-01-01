@@ -20,7 +20,6 @@ class CardLaporanMasuk extends StatelessWidget {
       reportsQuery = reportsQuery.where('status', isEqualTo: statusFilter);
     }
 
-    // Filter reports based on userRole
     if (userRole == 'staff') {
       reportsQuery =
           reportsQuery.where('status', isEqualTo: 'Menunggu Verifikasi');
@@ -97,7 +96,7 @@ class CardLaporanMasuk extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        data['ruangan'] ?? "Ruangan Kelas",
+                                        data['username'] ?? "username",
                                         style: const TextStyle(
                                           color: Colors.black,
                                           fontSize: 14,

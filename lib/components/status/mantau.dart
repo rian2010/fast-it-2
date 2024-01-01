@@ -1,14 +1,14 @@
-import 'package:fast_it_2/components/card/card_status.dart';
+import 'package:fast_it_2/components/status/progres_card.dart';
 import 'package:flutter/material.dart';
 
-class StatusLaporan extends StatefulWidget {
-  const StatusLaporan({Key? key}) : super(key: key);
+class StatusLaporanStaff extends StatefulWidget {
+  const StatusLaporanStaff({super.key});
 
   @override
-  State<StatusLaporan> createState() => _StatusLaporanState();
+  State<StatusLaporanStaff> createState() => _StatusLaporanStaffState();
 }
 
-class _StatusLaporanState extends State<StatusLaporan> {
+class _StatusLaporanStaffState extends State<StatusLaporanStaff> {
   String? currentFilter;
 
   @override
@@ -16,7 +16,7 @@ class _StatusLaporanState extends State<StatusLaporan> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Status Laporan',
+          'Progres Laporan ',
           style: TextStyle(color: Colors.black),
         ),
         centerTitle: true,
@@ -35,13 +35,14 @@ class _StatusLaporanState extends State<StatusLaporan> {
                   children: [
                     _buildFilterButton('Menunggu Verifikasi'),
                     _buildFilterButton('Diteruskan ke Dinas'),
+                    _buildFilterButton('Diverifikasi'),
                     _buildFilterButton('Dalam Pengerjaan'),
                     _buildFilterButton('Selesai'),
                   ],
                 ),
               ),
             ),
-            CardStatus(
+            ProgresLaporan(
               maxItemsToShow: 100,
               statusFilter: currentFilter,
             )

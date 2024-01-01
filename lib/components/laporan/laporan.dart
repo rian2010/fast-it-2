@@ -71,287 +71,326 @@ class _LaporanState extends State<Laporan> {
     return null;
   }
 
+  bool hasUnsavedChanges() {
+    // Check if there are unsaved changes in the form
+    // For example, you can check if the text controllers have non-empty values
+    return _verificationController.text.isNotEmpty ||
+        _ruanganController.text.isNotEmpty ||
+        selectedKerusakan != null ||
+        filePaths.isNotEmpty ||
+        _deskripsiController.text.isNotEmpty;
+  }
+
+  Future<bool> _onWillPop() async {
+    if (hasUnsavedChanges()) {
+      // Show a confirmation dialog if there are unsaved changes
+      return await AwesomeDialog(
+                  context: context,
+                  dialogType: DialogType.warning,
+                  animType: AnimType.bottomSlide,
+                  title: 'Perubahan yang Anda buat belum disimpan.',
+                  titleTextStyle:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  desc: 'Apakah Anda yakin ingin keluar? ',
+                  descTextStyle: TextStyle(fontWeight: FontWeight.normal),
+                  btnCancelOnPress: () =>
+                      () => Navigator.of(context).pop(false),
+                  btnOkOnPress: () => Navigator.of(context).pop(true),
+                  btnCancelText: 'Batal',
+                  btnOkColor: Color(0xFF0C356A))
+              .show() ??
+          false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     User? user = FirebaseAuth.instance.currentUser;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buat Laporan'),
-        backgroundColor: const Color(0xFF0C356A),
-        elevation: 0.0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  "Nama Sekolah",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                Column(
-                  children: [
-                    TypeAheadFormField<String>(
-                      textFieldConfiguration: TextFieldConfiguration(
-                        controller: _verificationController,
-                        decoration: InputDecoration(
-                          hintText: 'Pilih Sekolah',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide:
-                                const BorderSide(color: Color(0xFF0C356A)),
-                          ),
-                          contentPadding: const EdgeInsets.all(12.0),
-                        ),
-                      ),
-                      suggestionsCallback: (pattern) {
-                        return getSuggestions(pattern);
-                      },
-                      itemBuilder: (context, suggestion) {
-                        return ListTile(
-                          title: Text(suggestion),
-                        );
-                      },
-                      onSuggestionSelected: (suggestion) {
-                        setState(() {
-                          selectedSekolah = suggestion;
-                        });
-                        _verificationController.text = suggestion;
-                      },
-                      validator: _validateSekolah,
-                      suggestionsBoxDecoration: SuggestionsBoxDecoration(
-                        color: Colors.white,
-                        elevation: 5,
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Buat Laporan'),
+          backgroundColor: const Color(0xFF0C356A),
+          elevation: 0.0,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    "Nama Sekolah",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 16.0),
-                  ],
-                ),
-                const Text(
-                  "Ruangan",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: 300,
-                  child: TextFormField(
-                    controller: _ruanganController,
-                    decoration: InputDecoration(
-                      hintText: "Ruangan",
-                      contentPadding: EdgeInsets.all(10),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors
-                              .grey, // You can customize the border color here
-                          width: 1.0, // You can customize the border width here
-                        ),
-                        borderRadius: BorderRadius.circular(
-                            10), // You can customize the border radius here
-                      ),
-                    ),
-                    validator: _validateRuangan,
-                  ),
-                ),
-                const SizedBox(height: 16.0),
-                const Text(
-                  "Jenis Kerusakan",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                SizedBox(
-                  width: 300,
-                  child: DropdownButtonFormField<String>(
-                    value: selectedKerusakan,
-                    items: kerusakanOptions.map((String option) {
-                      return DropdownMenuItem<String>(
-                        value: option,
-                        child: Text(
-                          option,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedKerusakan = newValue;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: "Pilih Jenis Kerusakan",
-                      contentPadding: EdgeInsets.all(10),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors
-                              .grey, // You can customize the border color here
-                          width: 1.0, // You can customize the border width here
-                        ),
-                        borderRadius: BorderRadius.circular(
-                            10), // You can customize the border radius here
-                      ),
-                    ),
-                    validator: _validateKerusakan,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                buildText(
-                    'Ringan: Cat dinding yang terkelupas, pecahnya kaca jendela kecil',
-                    10,
-                    FontWeight.normal,
-                    Colors.grey),
-                const SizedBox(height: 10),
-                buildText(
-                    'Sedang: Keran air yang mengalir dengan tekanan rendah, pintu kelas yang sulit dibuka dan ditutup',
-                    10,
-                    FontWeight.normal,
-                    Colors.grey),
-                const SizedBox(height: 10),
-                buildText(
-                    'Berat: Kebocoran gas di laboratorium, kerusakan struktural pada gedung sekolah',
-                    10,
-                    FontWeight.normal,
-                    Colors.grey),
-                const SizedBox(height: 16),
-                const Text(
-                  "Unggah File",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                Container(
-                  height: 4 * 54.0,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey),
-                  ),
-                  child: Column(
+                  const SizedBox(height: 8.0),
+                  Column(
                     children: [
-                      if (filePaths.isEmpty)
-                        Expanded(
-                          child: Center(
-                            child: TextButton.icon(
-                              onPressed: () async {
-                                _showFilePickerOrCameraModal();
-                              },
-                              icon: const Icon(
-                                Icons.attach_file,
-                                color: Color(0xFF0C356A),
-                              ),
-                              label: const Text(
-                                "Pilih File",
-                                style: TextStyle(color: Color(0xFF0C356A)),
+                      TypeAheadFormField<String>(
+                        textFieldConfiguration: TextFieldConfiguration(
+                          controller: _verificationController,
+                          decoration: InputDecoration(
+                            hintText: 'Pilih Sekolah',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFF0C356A)),
+                            ),
+                            contentPadding: const EdgeInsets.all(12.0),
+                          ),
+                        ),
+                        suggestionsCallback: (pattern) {
+                          return getSuggestions(pattern);
+                        },
+                        itemBuilder: (context, suggestion) {
+                          return ListTile(
+                            title: Text(suggestion),
+                          );
+                        },
+                        onSuggestionSelected: (suggestion) {
+                          setState(() {
+                            selectedSekolah = suggestion;
+                          });
+                          _verificationController.text = suggestion;
+                        },
+                        validator: _validateSekolah,
+                        suggestionsBoxDecoration: SuggestionsBoxDecoration(
+                          color: Colors.white,
+                          elevation: 5,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      const SizedBox(height: 16.0),
+                    ],
+                  ),
+                  const Text(
+                    "Ruangan",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 300,
+                    child: TextFormField(
+                      controller: _ruanganController,
+                      decoration: InputDecoration(
+                        hintText: "Ruangan",
+                        contentPadding: EdgeInsets.all(10),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors
+                                .grey, // You can customize the border color here
+                            width:
+                                1.0, // You can customize the border width here
+                          ),
+                          borderRadius: BorderRadius.circular(
+                              10), // You can customize the border radius here
+                        ),
+                      ),
+                      validator: _validateRuangan,
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  const Text(
+                    "Jenis Kerusakan",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  SizedBox(
+                    width: 300,
+                    child: DropdownButtonFormField<String>(
+                      value: selectedKerusakan,
+                      items: kerusakanOptions.map((String option) {
+                        return DropdownMenuItem<String>(
+                          value: option,
+                          child: Text(
+                            option,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedKerusakan = newValue;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: "Pilih Jenis Kerusakan",
+                        contentPadding: EdgeInsets.all(10),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors
+                                .grey, // You can customize the border color here
+                            width:
+                                1.0, // You can customize the border width here
+                          ),
+                          borderRadius: BorderRadius.circular(
+                              10), // You can customize the border radius here
+                        ),
+                      ),
+                      validator: _validateKerusakan,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  buildText(
+                      'Ringan: Cat dinding yang terkelupas, pecahnya kaca jendela kecil',
+                      10,
+                      FontWeight.normal,
+                      Colors.grey),
+                  const SizedBox(height: 10),
+                  buildText(
+                      'Sedang: Keran air yang mengalir dengan tekanan rendah, pintu kelas yang sulit dibuka dan ditutup',
+                      10,
+                      FontWeight.normal,
+                      Colors.grey),
+                  const SizedBox(height: 10),
+                  buildText(
+                      'Berat: Kebocoran gas di laboratorium, kerusakan struktural pada gedung sekolah',
+                      10,
+                      FontWeight.normal,
+                      Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Unggah File",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  Container(
+                    height: 4 * 54.0,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child: Column(
+                      children: [
+                        if (filePaths.isEmpty)
+                          Expanded(
+                            child: Center(
+                              child: TextButton.icon(
+                                onPressed: () async {
+                                  _showFilePickerOrCameraModal();
+                                },
+                                icon: const Icon(
+                                  Icons.attach_file,
+                                  color: Color(0xFF0C356A),
+                                ),
+                                label: const Text(
+                                  "Pilih File",
+                                  style: TextStyle(color: Color(0xFF0C356A)),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      if (filePaths.isNotEmpty)
-                        Expanded(
-                          child: _buildSelectedImagesWidget(),
-                        ),
-                      if (filePaths.isNotEmpty)
-                        Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      filePaths.clear();
-                                    });
-                                  },
-                                  icon: const Icon(Icons.clear),
-                                  label: const Text("Hapus Semua"),
-                                ),
-                              ),
-                            ],
+                        if (filePaths.isNotEmpty)
+                          Expanded(
+                            child: _buildSelectedImagesWidget(),
                           ),
-                        ),
-                    ],
+                        if (filePaths.isNotEmpty)
+                          Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        filePaths.clear();
+                                      });
+                                    },
+                                    icon: const Icon(Icons.clear),
+                                    label: const Text("Hapus Semua"),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16.0),
-                const Text(
-                  "Deskripsi",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 16.0),
+                  const Text(
+                    "Deskripsi",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: 300,
-                  child: TextFormField(
-                    controller: _deskripsiController,
-                    maxLines: 10,
-                    decoration: InputDecoration(
-                      hintText: "Deskripsi Kerusakan",
-                      contentPadding: EdgeInsets.all(10),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors
-                              .grey, // You can customize the border color here
-                          width: 1.0, // You can customize the border width here
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 300,
+                    child: TextFormField(
+                      controller: _deskripsiController,
+                      maxLines: 10,
+                      decoration: InputDecoration(
+                        hintText: "Deskripsi Kerusakan",
+                        contentPadding: EdgeInsets.all(10),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors
+                                .grey, // You can customize the border color here
+                            width:
+                                1.0, // You can customize the border width here
+                          ),
+                          borderRadius: BorderRadius.circular(
+                              10), // You can customize the border radius here
                         ),
-                        borderRadius: BorderRadius.circular(
-                            10), // You can customize the border radius here
+                      ),
+                      validator: _validateDeskripsi,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  buildText(
+                      'Jelaskan kerusakan dengan benar', 12, null, Colors.grey),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        if (user != null) {
+                          _submitReport();
+                        } else {
+                          print('User is not signed in. Please log in.');
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0C356A),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16.0,
+                        horizontal: 32.0,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50.0),
                       ),
                     ),
-                    validator: _validateDeskripsi,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                buildText(
-                    'Jelaskan kerusakan dengan benar', 12, null, Colors.grey),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      if (user != null) {
-                        _submitReport();
-                      } else {
-                        print('User is not signed in. Please log in.');
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0C356A),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16.0,
-                      horizontal: 32.0,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50.0),
+                    child: const Text(
+                      'Kirim',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Kirim',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.0,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -413,6 +452,16 @@ class _LaporanState extends State<Laporan> {
           setState(() {
             userSubmittedReport = true;
           });
+          // Reset form fields after successful submission
+          _formKey.currentState?.reset();
+          _verificationController.clear();
+          _ruanganController.clear();
+          _deskripsiController.clear();
+          setState(() {
+            selectedSekolah = null;
+            selectedKerusakan = null;
+            filePaths.clear();
+          });
         }
       } else {
         print('User does not have the required role to submit a report.');
@@ -441,6 +490,22 @@ class _LaporanState extends State<Laporan> {
     ).show();
 
     return confirmed;
+  }
+
+  void _showSuccessDialog() {
+    AwesomeDialog(
+      context: context,
+      animType: AnimType.leftSlide,
+      headerAnimationLoop: false,
+      dialogType: DialogType.success,
+      showCloseIcon: true,
+      title: 'Berhasil',
+      desc: 'Laporan Berhasil Diajukan',
+      btnOkOnPress: () {},
+      btnOkIcon: Icons.check_circle,
+      btnCancelText: 'Batal',
+      onDismissCallback: (type) {},
+    ).show();
   }
 
   Future<String> _getUserRole(String userId) async {
@@ -506,21 +571,6 @@ class _LaporanState extends State<Laporan> {
       _overlayEntry!.remove();
       _overlayEntry = null;
     }
-  }
-
-  void _showSuccessDialog() {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: false,
-      dialogType: DialogType.success,
-      showCloseIcon: true,
-      title: 'Berhasil',
-      desc: 'Laporan Berhasil Diajukan',
-      btnOkOnPress: () {},
-      btnOkIcon: Icons.check_circle,
-      onDismissCallback: (type) {},
-    ).show();
   }
 
   void _showFilePickerOrCameraModal() {

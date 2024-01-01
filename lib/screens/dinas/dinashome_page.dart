@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/components/card/card_laporan_masuk.dart';
 import 'package:fast_it_2/components/card/progress_laporan.dart';
-import 'package:fast_it_2/components/laporan/dalam_pengerjaan.dart';
+import 'package:fast_it_2/components/detail/detail_laporan_selesai.dart';
 import 'package:fast_it_2/components/laporan/laporan_masuk.dart';
-import 'package:fast_it_2/components/laporan/laporan_selesai.dart';
+import 'package:fast_it_2/screens/dinas/dalam_pengerjaan.dart';
 import 'package:fast_it_2/screens/dinas/user_list.dart';
 // import 'package:fast_it_2/screens/staff/laporan_masuk.dart';
 import 'package:fast_it_2/components/widget/notification.dart';
@@ -194,7 +193,8 @@ class _DinasHomePageState extends State<DinasHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const DalamPengerjaan(),
+                              builder: (context) =>
+                                  const DalamPengerjaanDinas(),
                             ),
                           );
                           markLaporanMasukPageOpened();
@@ -211,7 +211,7 @@ class _DinasHomePageState extends State<DinasHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const LaporanSelesai(),
+                              builder: (context) => const LaporanSelesaiDinas(),
                             ),
                           );
                           markLaporanMasukPageOpened();

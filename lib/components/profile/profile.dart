@@ -23,9 +23,34 @@ class _ProfileState extends State<Profile> {
   String email = '';
   File? returnedImage;
 
+  void logoutUser() async {
+    try {
+      // Get the current user's UID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId != null) {
+        // Update the 'isOnline' field in the user document to false
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .update({'isOnline': false});
+      } else {
+        debugPrint('User ID is null. Unable to update online status.');
+      }
+    } catch (e) {
+      debugPrint('Error updating online status: $e');
+    }
+  }
+
   void logout() async {
     try {
+      // Before signing out, update the online status to false
+      logoutUser();
+
+      // Sign out the user
       await FirebaseAuth.instance.signOut();
+
+      // Navigate to the WelcomePage and remove the previous routes
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const WelcomePage()),

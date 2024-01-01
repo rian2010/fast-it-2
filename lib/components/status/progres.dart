@@ -3,71 +3,44 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:fast_it_2/components/widget/package.dart';
 // import 'package:fast_it_2/components/widget/package.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-class DetailPage extends StatefulWidget {
+class ProgresPage extends StatefulWidget {
   final String documentId;
 
-  const DetailPage({
+  const ProgresPage({
     Key? key,
     required this.documentId,
   }) : super(key: key);
 
   @override
-  State<DetailPage> createState() => _DetailPageState();
+  State<ProgresPage> createState() => _ProgresPageState();
 }
 
-class _DetailPageState extends State<DetailPage> {
+class _ProgresPageState extends State<ProgresPage> {
   int selectedImageIndex = 0;
   bool laporanDibatalkan = false;
-  bool isRatingSubmitted = false;
-  double rating = 0.0;
-  final String isRatingSubmittedKey = 'isRatingSubmitted';
+  bool isVerified = false;
+  bool laporanDiVerifikasi = false;
+  bool showDescription = true;
 
+  double rating = 0.0;
   final PageController _pageController = PageController();
   late Stream<DocumentSnapshot> reportStream;
   late Future<Map<String, dynamic>> fetchData;
-  late SharedPreferences prefs;
 
   @override
   void initState() {
     super.initState();
     _loadButtonState();
-    loadRatingSubmittedState();
+
     fetchData = _getData();
     fetchRatingFromDatabase();
     reportStream = FirebaseFirestore.instance
         .collection('reports')
         .doc(widget.documentId)
         .snapshots();
-  }
-
-  Future<void> loadRatingSubmittedState() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isRatingSubmitted = prefs.getBool(isRatingSubmittedKey) ?? false;
-    });
-  }
-
-  Future<void> saveRatingSubmittedState() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool(isRatingSubmittedKey, isRatingSubmitted);
-  }
-
-  Future<Map<String, dynamic>> _getData() async {
-    var snapshot = await FirebaseFirestore.instance
-        .collection('reports')
-        .doc(widget.documentId)
-        .get();
-
-    if (snapshot.exists) {
-      return snapshot.data() as Map<String, dynamic>;
-    } else {
-      return {};
-    }
   }
 
   Future<void> fetchRatingFromDatabase() async {
@@ -82,11 +55,23 @@ class _DetailPageState extends State<DetailPage> {
         // If the document exists, set the rating value
         setState(() {
           rating = (reportSnapshot.data() as dynamic)['penilaian'] ?? 0.0;
-          isRatingSubmitted = true;
         });
       }
     } catch (e) {
       print('Error fetching rating from the database: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _getData() async {
+    var snapshot = await FirebaseFirestore.instance
+        .collection('reports')
+        .doc(widget.documentId)
+        .get();
+
+    if (snapshot.exists) {
+      return snapshot.data() as Map<String, dynamic>;
+    } else {
+      return {};
     }
   }
 
@@ -128,11 +113,13 @@ class _DetailPageState extends State<DetailPage> {
               return Text('Error: ${streamSnapshot.error}');
             }
 
+            // Combine the data from the initial fetch and the stream
             data = streamSnapshot.data!.data() as Map<String, dynamic>;
 
             return Scaffold(
               appBar: _buildAppBar(data),
               body: buildBody(data),
+              bottomNavigationBar: buildBottomNavigationBar(data),
             );
           },
         );
@@ -178,8 +165,6 @@ class _DetailPageState extends State<DetailPage> {
               data, ruangan, jenisKerusakan, deskripsi, selectedTechnician),
           if (data['status'] == 'Selesai')
             buildLaporanSelesai(context, buktiLaporan),
-          if (data['status'] == 'Menunggu Verifikasi')
-            buildBatalkanLaporanButton(),
           // if (data['status'] == 'Dalam Pengerjaan') MyTimeline()
           // if (data['status'] == 'Dalam Pengerjaan')
           //   PackageDeliveryTrackingPage()
@@ -273,6 +258,7 @@ class _DetailPageState extends State<DetailPage> {
           buildText('Deskripsi:', 18.0, FontWeight.bold, Colors.grey),
           const SizedBox(height: 10.0),
           buildText(deskripsi, 15.0, null, null),
+          const SizedBox(height: 10.0),
           if (data['status'] == 'Dalam Pengerjaan' ||
               data['status'] == 'Selesai') ...[
             buildText('Teknisi:', 18.0, FontWeight.bold, Colors.grey),
@@ -465,18 +451,37 @@ class _DetailPageState extends State<DetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              buildText('Bukti: ', 18, FontWeight.bold, Colors.grey),
+              buildText('Bukti', 18, FontWeight.bold, Colors.grey),
               const SizedBox(height: 8),
               buildImage(buktiLaporan),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               buildRatingBar(),
-              const SizedBox(height: 8)
+              const SizedBox(height: 18),
             ],
           ),
         ),
-        buildBottomButton(),
-        const SizedBox(height: 18)
       ],
+    );
+  }
+
+  Widget buildRatingBar() {
+    final starSize = 48.0; // Adjust the size as needed
+
+    return Center(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) {
+              return Icon(
+                index < rating.ceil() ? Icons.star : Icons.star_border,
+                color: Colors.amber,
+                size: starSize,
+              );
+            }),
+          )
+        ],
+      ),
     );
   }
 
@@ -493,148 +498,222 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   Widget buildImage(List<String> buktiLaporan) {
-    if (buktiLaporan.isNotEmpty) {
-      return Container(
-        color: Colors.white,
-        child: Center(
-          child: SizedBox(
-            width: double.infinity,
-            height: 250,
-            child: Image.network(
-              buktiLaporan[0],
-              fit: BoxFit.fitWidth,
-              loadingBuilder: (BuildContext context, Widget child,
-                  ImageChunkEvent? loadingProgress) {
-                if (loadingProgress == null) {
-                  return child;
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-              },
-            ),
-          ),
-        ),
-      );
-    } else {
-      return Container(
-        color: Colors.white,
-        child: Center(
-          child: SizedBox(
-            width: double.infinity,
-            height: 250,
-            child: Lottie.asset(
-                'lib/animation/notfound.json'), // Replace with your Lottie animation asset path
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget buildRatingBar() {
-    final starSize = 48.0; // Adjust the size as needed
-
-    return Center(
-      child: Column(
-        children: [
-          // isRatingSubmitted
-          //     ? Row(
-          //         mainAxisAlignment: MainAxisAlignment.center,
-          //         children: List.generate(5, (index) {
-          //           return Icon(
-          //             index < rating.ceil() ? Icons.star : Icons.star_border,
-          //             color: Colors.amber,
-          //             size: starSize,
-          //           );
-          //         }),
-          //       )
-          // :
-          RatingBar.builder(
-            initialRating: rating,
-            minRating: 1,
-            direction: Axis.horizontal,
-            allowHalfRating: true,
-            itemCount: 5,
-            itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-            itemBuilder: (context, _) => const Icon(
-              Icons.star,
-              color: Colors.amber,
-            ),
-            onRatingUpdate: (value) {
-              setState(() {
-                rating = value;
-              });
-            },
-            itemSize: starSize,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildBottomButton() {
-    return Visibility(
-      // visible: !isRatingSubmitted,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
+    return Container(
+      color: Colors.white,
+      child: Center(
+        child: SizedBox(
           width: double.infinity,
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton(
-            onPressed: () async {
-              debugPrint('Berhasil Dikirim');
-
-              // Update the document with the new 'penilaian' field
-              await FirebaseFirestore.instance
-                  .collection('reports')
-                  .doc(widget.documentId)
-                  .update({'penilaian': rating});
-
-              setState(() {
-                isRatingSubmitted = true;
-              });
-
-              // Save the state to local storage
-              saveRatingSubmittedState();
-
-              submitRatingToReports();
+          height: 250,
+          child: Image.network(
+            buktiLaporan.isNotEmpty
+                ? buktiLaporan[0]
+                : '', // Display the first image if available
+            fit: BoxFit.fitWidth,
+            loadingBuilder: (BuildContext context, Widget child,
+                ImageChunkEvent? loadingProgress) {
+              if (loadingProgress == null) {
+                return child;
+              } else {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0C356A),
-              padding: const EdgeInsets.symmetric(
-                vertical: 16.0,
-                horizontal: 32.0,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(50.0),
-              ),
-            ),
-            child: const Text(
-              'Kirim',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16.0,
-              ),
-            ),
           ),
         ),
       ),
     );
   }
 
-  void submitRatingToReports() async {
+  Visibility? buildBottomNavigationBar(Map<String, dynamic> data) {
+    return data['status'] ==
+            'Menunggu Verifikasi' // Check if status is not 'Selesai'
+        ? Visibility(
+            visible: !isVerified,
+            child: BottomAppBar(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          showTolakConfirmationDialog();
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all<Color>(
+                            const Color(0xFFBA0909),
+                          ),
+                          foregroundColor: MaterialStateProperty.all<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                        child: Text(showDescription ? 'Tolak' : 'Submit'),
+                      ),
+                    ),
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (data['status'] == 'Menunggu Verifikasi') {
+                            teruskanDialog();
+                          }
+                        },
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all<Color>(
+                            const Color(0xFF0C356A),
+                          ),
+                          foregroundColor: MaterialStateProperty.all<Color>(
+                            Colors.black,
+                          ),
+                          shape:
+                              MaterialStateProperty.all<RoundedRectangleBorder>(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Verifikasi',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        : null;
+  }
+
+  void showTolakConfirmationDialog() {
     AwesomeDialog(
-            context: context,
-            dialogType: DialogType.success,
-            headerAnimationLoop: false,
-            animType: AnimType.bottomSlide,
-            title: 'Berhasil',
-            desc: 'Terimakasih sudah memberikan penilaian',
-            buttonsTextStyle: const TextStyle(color: Colors.white),
-            showCloseIcon: true,
-            btnOkOnPress: () {})
-        .show();
+      context: context,
+      dialogType: DialogType.warning,
+      headerAnimationLoop: false,
+      animType: AnimType.bottomSlide,
+      title: 'Konfirmasi Tindakan',
+      desc: '',
+      body: const Center(
+        child: Text(
+          'Apakah Anda yakin ingin menolak laporan ini?',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: Colors.black),
+        ),
+      ),
+      buttonsTextStyle: const TextStyle(color: Colors.white),
+      showCloseIcon: true,
+      btnCancelOnPress: () {},
+      btnOkOnPress: () async {
+        debugPrint('Berhasil ditolak');
+        await FirebaseFirestore.instance
+            .collection('reports')
+            .doc(widget.documentId)
+            .update({'status': 'Ditolak'});
+        setState(() {
+          isVerified = true;
+          laporanDiVerifikasi = true;
+        });
+        _saveButtonState();
+      },
+      btnOkColor: const Color(0xFF0C356A),
+      btnCancelColor: const Color(0xFFCD1C1C),
+    ).show();
+  }
+
+  void showVerificationDialog() {
+    AwesomeDialog(
+      context: context,
+      animType: AnimType.leftSlide,
+      headerAnimationLoop: false,
+      dialogType: DialogType.success,
+      showCloseIcon: true,
+      title: 'Berhasil',
+      desc: 'Verifikasi Berhasil',
+      btnOkOnPress: () async {
+        debugPrint('Berhasil diverifikasi');
+        await FirebaseFirestore.instance
+            .collection('reports')
+            .doc(widget.documentId)
+            .update({
+          'status': 'Diverifikasi',
+          'verificationDateTime': FieldValue.serverTimestamp(),
+        });
+        setState(() {
+          isVerified = true;
+          laporanDiVerifikasi = true;
+        });
+        _saveButtonState();
+      },
+      btnOkIcon: Icons.check_circle,
+      onDismissCallback: (type) {
+        debugPrint('Dialog Dissmiss from callback $type');
+      },
+    ).show();
+  }
+
+  void teruskanDialog() {
+    AwesomeDialog(
+      context: context,
+      animType: AnimType.leftSlide,
+      headerAnimationLoop: false,
+      dialogType: DialogType.question,
+      showCloseIcon: true,
+      title: 'Teruskan?',
+      titleTextStyle: TextStyle(
+          fontWeight: FontWeight.bold, fontSize: 20, color: Colors.grey),
+      desc: ('Apakah anda ingin meneruskan laporan ini ke dinas pendidikan?'),
+      descTextStyle: TextStyle(),
+      btnOkOnPress: () async {
+        debugPrint('Berhasil Diteruskan');
+        await FirebaseFirestore.instance
+            .collection('reports')
+            .doc(widget.documentId)
+            .update({
+          'status': 'Diteruskan ke Dinas',
+          'verificationDateTime': FieldValue.serverTimestamp(),
+        });
+        showSuccessDialog('Berhasil diteruskan');
+      },
+      btnCancelOnPress: () async {
+        debugPrint('Berhasil diverifikasi');
+        await FirebaseFirestore.instance
+            .collection('reports')
+            .doc(widget.documentId)
+            .update({
+          'status': 'Ditangani Sekolah',
+          'verificationDateTime': FieldValue.serverTimestamp(),
+        });
+        Navigator.pop(context);
+        setState(() {
+          isVerified = true;
+          laporanDiVerifikasi = true;
+        });
+        _saveButtonState();
+      },
+      btnCancelText: ('Terima'),
+      btnOkColor: const Color(0xFF0C356A),
+      btnCancelColor: Colors.green,
+      btnOkText: ('Teruskan'),
+      onDismissCallback: (type) {
+        debugPrint('Dialog Dissmiss from callback $type');
+      },
+    ).show();
+  }
+
+  void showSuccessDialog(String message) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.success, // You can change the type as needed
+      animType: AnimType.bottomSlide,
+      title: 'Berhasil',
+      desc: message,
+      btnOkOnPress: () {
+        Navigator.pop(context);
+      },
+      btnOkText: 'OK',
+    ).show();
   }
 }

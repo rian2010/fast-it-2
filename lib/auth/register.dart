@@ -98,6 +98,8 @@ class _RegistrationState extends State<Registration> {
 
   void _signUp(String email, String password, String confirmPassword,
       String username) async {
+    print('Attempting to sign up...');
+
     if (_formKey.currentState!.validate()) {
       // Check password requirements
       if (!_isPasswordEightCharacters || !_hasPasswordOneNumber) {
@@ -113,6 +115,19 @@ class _RegistrationState extends State<Registration> {
         return;
       }
 
+      if (_formKey.currentState!.validate()) {
+        // Check email format
+        if (_validateNotEmpty(email) != null ||
+            !RegExp(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+                .hasMatch(email)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Email yang digunakan tidak valid!.'),
+            ),
+          );
+          return;
+        }
+      }
       _showLoadingOverlay();
       setState(() {
         _isRegistering = true;
@@ -120,17 +135,35 @@ class _RegistrationState extends State<Registration> {
 
       if (password == confirmPassword) {
         try {
-          User? user = await _firebaseService.signUp(email, password, username);
+          // Check if the email is already in use
+          bool isEmailInUse = await _isEmailInUse(email);
 
-          if (user != null) {
-            if (_defaultRole == 'Siswa') {
-              _completeSignup();
-            } else {
-              debugPrint("Unknown role: $_defaultRole");
+          if (isEmailInUse) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Email sudah digunakan oleh akun lain.'),
+              ),
+            );
+          } else {
+            User? user =
+                await _firebaseService.signUp(email, password, username);
+
+            if (user != null) {
+              if (_defaultRole == 'Siswa') {
+                _completeSignup();
+              } else {
+                debugPrint("Unknown role: $_defaultRole");
+              }
             }
           }
         } catch (e) {
           debugPrint("Registration error: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Terjadi kesalahan saat mendaftar. Silakan coba lagi.'),
+            ),
+          );
         } finally {
           _removeLoadingOverlay();
           setState(() {

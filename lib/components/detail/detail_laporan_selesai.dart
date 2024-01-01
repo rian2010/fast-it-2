@@ -1,20 +1,15 @@
-import 'package:fast_it_2/components/card/card_dalam_pengerjaan.dart';
+import 'package:fast_it_2/components/card/card_selesai.dart';
 import 'package:flutter/material.dart';
 
-class DalamPengerjaan extends StatefulWidget {
-  const DalamPengerjaan({super.key});
+class LaporanSelesaiDinas extends StatelessWidget {
+  const LaporanSelesaiDinas({super.key});
 
-  @override
-  State<DalamPengerjaan> createState() => _DalamPengerjaanState();
-}
-
-class _DalamPengerjaanState extends State<DalamPengerjaan> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           title: const Text(
-            'Dalam Pengerjaan',
+            'Selesai',
             style: TextStyle(color: Colors.white),
           ),
           leading: IconButton(
@@ -27,6 +22,6 @@ class _DalamPengerjaanState extends State<DalamPengerjaan> {
           backgroundColor: const Color(0xFF0C356A),
           elevation: 0.0,
         ),
-        body: const CardDalamPengerjaan());
+        body: const CardLaporanSelesai(userRole: 'dinas'));
   }
 }

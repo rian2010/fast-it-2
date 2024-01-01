@@ -58,6 +58,90 @@ class _LoginState extends State<Login> {
     _overlayEntry = null;
   }
 
+  // Future<void> _signInWithEmailAndPassword() async {
+  //   if (_isButtonPressed) return;
+
+  //   setState(() {
+  //     _isButtonPressed = true;
+  //     _emailError = '';
+  //     _passwordError = '';
+  //     _authError = '';
+  //   });
+
+  //   _showLoadingOverlay(); // Show loading overlay
+
+  //   final email = _emailController.text.trim();
+  //   final password = _passwordController.text.trim();
+
+  //   if (email.isEmpty || password.isEmpty) {
+  //     setState(() {
+  //       _emailError = email.isEmpty ? 'Email tidak boleh kosong' : '';
+  //       _passwordError =
+  //           password.isEmpty ? 'Kata sandi tidak boleh kosong' : '';
+  //       _isButtonPressed = false;
+  //     });
+  //     _hideLoadingOverlay(); // Hide loading overlay
+  //     return;
+  //   }
+
+  //   try {
+  //     // Hash the entered password
+  //     String hashedPassword = sha256.convert(utf8.encode(password)).toString();
+
+  //     // Use the hashed password for authentication
+  //     UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+  //       email: email,
+  //       password: hashedPassword,
+  //     );
+
+  //     if (userCredential.user != null) {
+  //       final prefs = await SharedPreferences.getInstance();
+  //       await prefs.setString('email', email);
+  //       await prefs.setBool('rememberMe', _rememberMe);
+
+  //       // Check the user's role
+  //       final userSnapshot = await FirebaseFirestore.instance
+  //           .collection('users')
+  //           .doc(userCredential.user!.uid)
+  //           .get();
+
+  //       if (userSnapshot.exists) {
+  //         String userRole = userSnapshot.get('role');
+
+  //         // Based on the role, navigate to the appropriate page
+  //         switch (userRole) {
+  //           case 'Siswa':
+  //             _navigateToDashboard();
+  //             break;
+  //           case 'Staff':
+  //             _navigateToStaffHomePage();
+  //             break;
+  //           case 'Dinas':
+  //             _navigateToDinasPage();
+  //             break;
+  //           default:
+  //             debugPrint("Unknown role: $userRole");
+  //         }
+  //       } else {
+  //         debugPrint("User role not found");
+  //       }
+  //     } else {
+  //       setState(() {
+  //         _authError = 'Autentikasi gagal.';
+  //         _isButtonPressed = false;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _authError = 'Autentikasi gagal.';
+  //       _isButtonPressed = false;
+  //     });
+  //     debugPrint("Error: $e");
+  //   } finally {
+  //     _hideLoadingOverlay(); // Hide loading overlay
+  //   }
+  // }
+
   Future<void> _signInWithEmailAndPassword() async {
     if (_isButtonPressed) return;
 
@@ -95,6 +179,9 @@ class _LoginState extends State<Login> {
       );
 
       if (userCredential.user != null) {
+        // Set user online status to true after successful login
+        await loginUser();
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('email', email);
         await prefs.setBool('rememberMe', _rememberMe);
@@ -139,6 +226,25 @@ class _LoginState extends State<Login> {
       debugPrint("Error: $e");
     } finally {
       _hideLoadingOverlay(); // Hide loading overlay
+    }
+  }
+
+  Future<void> loginUser() async {
+    try {
+      // Get the current user's UID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId != null) {
+        // Update the 'isOnline' field in the user document to true
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .update({'isOnline': true});
+      } else {
+        debugPrint('User ID is null. Unable to update online status.');
+      }
+    } catch (e) {
+      debugPrint('Error updating online status: $e');
     }
   }
 

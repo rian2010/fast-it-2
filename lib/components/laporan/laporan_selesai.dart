@@ -24,7 +24,6 @@ class _LaporanSelesaiState extends State<LaporanSelesai> {
             },
             color: Colors.white,
           ),
-          centerTitle: true,
           backgroundColor: const Color(0xFF0C356A),
           elevation: 0.0,
         ),

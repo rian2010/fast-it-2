@@ -1,28 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_it_2/components/detail/detail_laporan.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fast_it_2/components/status/progres.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-class CardDalamPengerjaan extends StatelessWidget {
-  const CardDalamPengerjaan({Key? key});
+class ProgresLaporan extends StatelessWidget {
+  final int maxItemsToShow;
+  final String? statusFilter;
+
+  ProgresLaporan({
+    this.maxItemsToShow = 3,
+    this.statusFilter,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final userId = user?.uid;
-
     CollectionReference reportsCollection =
         FirebaseFirestore.instance.collection('reports');
 
     return StreamBuilder<QuerySnapshot>(
-      stream: reportsCollection
-          .where(
-            'status',
-            isEqualTo: 'Dalam Pengerjaan',
-          )
-          .where('userId', isEqualTo: userId)
-          .snapshots(),
+      stream: statusFilter != null
+          ? reportsCollection
+              .where('status', isEqualTo: statusFilter)
+              .snapshots()
+          : reportsCollection.snapshots(),
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -33,8 +33,14 @@ class CardDalamPengerjaan extends StatelessWidget {
         }
 
         if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          List<DocumentSnapshot> displayedReports = snapshot.data!.docs
+              .take(maxItemsToShow)
+              .toList()
+              .reversed
+              .toList();
+
           return Column(
-            children: snapshot.data!.docs.map((DocumentSnapshot document) {
+            children: displayedReports.map((DocumentSnapshot document) {
               var data = document.data() as Map<String, dynamic>;
 
               return GestureDetector(
@@ -42,7 +48,7 @@ class CardDalamPengerjaan extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DetailPage(
+                      builder: (context) => ProgresPage(
                         documentId: document.id,
                       ),
                     ),
@@ -53,23 +59,22 @@ class CardDalamPengerjaan extends StatelessWidget {
                   children: [
                     const SizedBox(
                       height: 8,
-                    ), // Add padding between AppBar and the content
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Container(
                         width: 300,
                         decoration: BoxDecoration(
-                          color: Colors.white, // Set the background color
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color:
-                                const Color(0xFF0C356A), // Set the border color
-                            width: 2.0, // Set the border width
+                            color: const Color(0xFF0C356A),
+                            width: 2.0,
                           ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
+                          children: [
                             Padding(
                               padding:
                                   const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
@@ -77,8 +82,7 @@ class CardDalamPengerjaan extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   const Icon(
-                                    Icons
-                                        .assignment, // Replace with your desired icon
+                                    Icons.assignment,
                                   ),
                                   const SizedBox(width: 4),
                                   Column(
@@ -86,7 +90,7 @@ class CardDalamPengerjaan extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        data['ruangan'] ?? "Ruangan Kelas",
+                                        data['username'] ?? "username",
                                         style: const TextStyle(
                                           color: Colors.black,
                                           fontSize: 14,
@@ -126,12 +130,11 @@ class CardDalamPengerjaan extends StatelessWidget {
                             ),
                             const SizedBox(height: 10),
                             Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal:
-                                      8.0), // Adjust left and right padding
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8.0),
                               child: Container(
                                 height: 1,
-                                color: Colors.grey[300], // Thin line color
+                                color: Colors.grey[300],
                               ),
                             ),
                             Row(
@@ -160,7 +163,7 @@ class CardDalamPengerjaan extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        data['nama'] ?? "Ruang Kelas",
+                                        data['ruangan'] ?? "Ruang Kelas",
                                         style: TextStyle(
                                           color: Colors.grey[800],
                                           fontSize: 16,
@@ -201,15 +204,7 @@ class CardDalamPengerjaan extends StatelessWidget {
         } else {
           // Handle the case where there is no data
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 550, // Adjust the height of the Lottie animation
-                  child: Lottie.asset('lib/animation/datanotfound.json'),
-                ),
-              ],
-            ),
+            child: Lottie.asset('lib/animation/datanotfound.json'),
           );
         }
       },
@@ -226,6 +221,8 @@ class CardDalamPengerjaan extends StatelessWidget {
       case 'Dalam Pengerjaan':
         return const Icon(Icons.build, color: Colors.amber, size: 24);
       case 'Selesai':
+        return const Icon(Icons.verified, color: Colors.green, size: 24);
+      case 'Ditangani Sekolah':
         return const Icon(Icons.verified, color: Colors.green, size: 24);
       case 'Dibatalkan':
         return const Icon(Icons.cancel, color: Colors.red, size: 24);

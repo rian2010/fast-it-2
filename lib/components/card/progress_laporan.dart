@@ -24,8 +24,8 @@ class ProgresLaporan extends StatelessWidget {
       reportsQuery = reportsQuery.where('status',
           whereNotIn: ['Menunggu Verifikasi', 'Ditangani Sekolah']);
     } else if (userRole == 'staff') {
-      reportsQuery =
-          reportsQuery.where('status', isEqualTo: 'Ditangani Sekolah');
+      reportsQuery = reportsQuery.where('status',
+          whereIn: ['Ditangani Sekolah', 'Menunggu Verifikasi']);
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -97,7 +97,7 @@ class ProgresLaporan extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        data['ruangan'] ?? "Ruangan Kelas",
+                                        data['username'] ?? "username",
                                         style: const TextStyle(
                                           color: Colors.black,
                                           fontSize: 14,

@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:fast_it_2/components/status/mantau.dart';
 import 'package:fast_it_2/main.dart';
 import 'package:fast_it_2/screens/siswa/status_laporan.dart';
 import 'package:fast_it_2/components/profile/profile.dart';
@@ -87,7 +88,12 @@ class _StaffNavbarState extends State<StaffNavbar> {
   @override
   void initState() {
     super.initState();
-    _pages = [StaffPage(), StatusLaporan(), const Profile()];
+    _pages = [
+      StaffPage(),
+      StatusLaporan(),
+      StatusLaporanStaff(),
+      const Profile()
+    ];
   }
 
   @override
@@ -108,6 +114,12 @@ class _StaffNavbarState extends State<StaffNavbar> {
             BottomNavigationBarItem(
               icon: Icon(Icons.check_circle),
               label: 'Status',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons
+                  .panorama_photosphere_select_rounded), // Replace 'new_icon' with the desired icon for StatusLaporanStaff
+              label:
+                  'Progres', // Replace 'New Label' with the desired label for StatusLaporanStaff
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),

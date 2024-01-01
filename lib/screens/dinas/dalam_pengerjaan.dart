@@ -1,14 +1,9 @@
-import 'package:fast_it_2/components/card/card_dalam_pengerjaan.dart';
+import 'package:fast_it_2/components/card/working.dart';
 import 'package:flutter/material.dart';
 
-class DalamPengerjaan extends StatefulWidget {
-  const DalamPengerjaan({super.key});
+class DalamPengerjaanDinas extends StatelessWidget {
+  const DalamPengerjaanDinas({super.key});
 
-  @override
-  State<DalamPengerjaan> createState() => _DalamPengerjaanState();
-}
-
-class _DalamPengerjaanState extends State<DalamPengerjaan> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,9 +19,10 @@ class _DalamPengerjaanState extends State<DalamPengerjaan> {
             },
             color: Colors.white,
           ),
+          centerTitle: true,
           backgroundColor: const Color(0xFF0C356A),
           elevation: 0.0,
         ),
-        body: const CardDalamPengerjaan());
+        body: const DalamPengerjaanCard());
   }
 }
